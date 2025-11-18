@@ -1,13 +1,35 @@
+# Parallax Voice Office Configuration
+
+# API Configuration
 api_port: 5001
-delay_between_items: 2
-delay_between_steps: 1
 enable_web_api: true
-max_retries: 3
-max_tokens: -1
-model: gpt-oss:20b
-ollama_host: http://localhost:11434
-save_interval: 5
-task_configs_dir: task_configs
+
+# Parallax Configuration
+parallax:
+  host: localhost
+  port: 50051
+  model: qwen3:1b
+  max_workers: 4
+  timeout: 600
+  retry_attempts: 3
+
+# Model Configuration
+model: qwen3:1b
 temperature: 0.8
 top_p: 0.9
+max_tokens: -1
+
+# Task Processing
+delay_between_items: 2
+delay_between_steps: 1
+max_retries: 3
+save_interval: 5
+task_configs_dir: task_configs
+
+# Cluster Configuration
+cluster:
+  enable_distributed: true
+  health_check_interval: 30
+  node_timeout: 60
+  load_balance_strategy: round_robin  # round_robin, least_loaded, or affinity
 

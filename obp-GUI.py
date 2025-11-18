@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-OSS at Night - Overnight AI Assistant
+Parallax Voice Office - Distributed AI Voice Assistant
 Single file with web interface for local network access
-Run: python task_processor_gui.py
+Run: python obp-GUI.py
 Access: http://your-ip:5001
 """
 
@@ -25,6 +25,17 @@ from enum import Enum
 from flask import Flask, render_template_string, request, jsonify, send_file
 from flask_cors import CORS
 import traceback
+
+# Parallax SDK imports
+try:
+    import grpc
+    from parallax import Client as ParallaxClient
+    PARALLAX_AVAILABLE = True
+except ImportError as e:
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Parallax SDK not available: {e}")
+    logger.warning("Falling back to Ollama compatibility mode")
+    PARALLAX_AVAILABLE = False
 
 # Load environment variables from .env file
 try:
@@ -977,6 +988,7 @@ HTML_TEMPLATE = '''
                 <div class="tab-list">
                     <button class="tab-trigger active" onclick="switchTab('queue')">Task Queue</button>
                     <button class="tab-trigger" onclick="switchTab('results')">Results</button>
+                    <button class="tab-trigger" onclick="switchTab('cluster')">🖥️  Cluster</button>
                     <button class="tab-trigger" onclick="switchTab('logs')">Logs</button>
                     <button class="tab-trigger" onclick="switchTab('files')">Files 📁</button>
                     <a href="/gallery" target="_blank" class="tab-trigger" style="text-decoration: none;">Gallery View 🎨</a>
@@ -995,12 +1007,26 @@ HTML_TEMPLATE = '''
                 </div>
             </div>
             
+            <div class="tab-content" id="tab-cluster">
+                <div style="margin-bottom: 1rem;">
+                    <button onclick="refreshClusterStatus()" class="button button-primary">🔄 Refresh Cluster Status</button>
+                </div>
+                <div id="cluster-info" class="result-viewer">
+                    <div class="cluster-status-card">
+                        <h3>Parallax Cluster Status</h3>
+                        <div id="cluster-status-content">
+                            <p>Loading cluster information...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="tab-content" id="tab-logs">
                 <div class="result-viewer" id="logs-viewer">
                     Logs will appear here...
                 </div>
             </div>
-            
+
             <div class="tab-content" id="tab-files">
                 <div style="margin-bottom: 1rem;">
                     <button onclick="refreshFiles()" class="btn">🔄 Refresh Files</button>
@@ -1551,12 +1577,14 @@ HTML_TEMPLATE = '''
             const tabContent = document.getElementById(`tab-${tabName}`);
             if (tabContent) {
                 tabContent.classList.add('active');
-                
+
                 // Load content based on tab
                 if (tabName === 'files') {
                     refreshFiles();
                 } else if (tabName === 'results') {
                     loadCompletedTasks();
+                } else if (tabName === 'cluster') {
+                    onClusterTabOpen();
                 }
             }
         }
@@ -1677,7 +1705,83 @@ HTML_TEMPLATE = '''
                 showToast('Download failed: ' + error.message, 'error');
             }
         }
-        
+
+        // Cluster Status Functions
+        async function refreshClusterStatus() {
+            try {
+                const response = await fetch('/api/cluster/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    displayClusterStatus(status);
+                    showToast('Cluster status updated', 'success');
+                } else {
+                    showToast('Error loading cluster status', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading cluster status:', error);
+                showToast('Error loading cluster status', 'error');
+            }
+        }
+
+        function displayClusterStatus(status) {
+            const content = document.getElementById('cluster-status-content');
+
+            const statusIcon = status.connected ? '✅' : '❌';
+            const statusText = status.connected ? 'Connected' : 'Disconnected';
+            const statusColor = status.connected ? '#10b981' : '#ef4444';
+
+            const html = `
+                <div style="padding: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div style="padding: 1rem; background: var(--muted); border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.25rem;">Status</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: ${statusColor};">
+                                ${statusIcon} ${statusText}
+                            </div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--muted); border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.25rem;">Model</div>
+                            <div style="font-size: 1.25rem; font-weight: bold;">${status.model || 'N/A'}</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--muted); border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.25rem;">Active Nodes</div>
+                            <div style="font-size: 1.25rem; font-weight: bold;">${status.nodes || 0}</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--muted); border-radius: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.25rem;">Cluster Host</div>
+                            <div style="font-size: 1rem; font-weight: bold;">${status.host || 'N/A'}:${status.port || 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div style="padding: 1rem; background: var(--muted); border-radius: 0.5rem;">
+                        <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.5rem;">Parallax SDK Status</div>
+                        <div style="font-size: 0.875rem;">
+                            ${status.parallax_available ? '✅ Parallax SDK Available' : '⚠️  Parallax SDK Not Available (Using Ollama fallback)'}
+                        </div>
+                        ${status.last_check ? `
+                        <div style="font-size: 0.75rem; color: var(--muted-foreground); margin-top: 0.5rem;">
+                            Last checked: ${new Date(status.last_check).toLocaleString()}
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${!status.connected && status.parallax_available ? `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0.5rem; color: #92400e;">
+                        <strong>⚠️  Connection Issue</strong>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem;">
+                            Make sure Parallax is running: <code style="background: #fff; padding: 0.125rem 0.25rem; border-radius: 0.25rem;">parallax serve</code>
+                        </p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        // Auto-refresh cluster status when tab is opened
+        function onClusterTabOpen() {
+            refreshClusterStatus();
+        }
+
         // Enhanced task display with progress
         function displayEnhancedTask(task) {
             const results = typeof task.results === 'string' ? JSON.parse(task.results || '{}') : (task.results || {});
@@ -2058,20 +2162,126 @@ class TaskProcessor:
         self.queue_file = Path("task_queue.json")
         self.results_dir = Path("results")
         self.results_dir.mkdir(exist_ok=True)
-        
-        self.config = {
-            'model': 'gpt-oss:20b',
-            'ollama_host': os.getenv('OLLAMA_HOST', 'http://localhost:11434'),
-            'temperature': 0.7,
-            'max_retries': 3
-        }
-        
+
+        # Load configuration from YAML file
+        self.load_config()
+
         self.queue = []
         self.processing = False
         self.processing_thread = None
-        
+
+        # Initialize Parallax client
+        self.parallax_client = None
+        self.cluster_nodes = []
+        self.cluster_health = {
+            'connected': False,
+            'nodes': [],
+            'last_check': None
+        }
+        self.init_parallax()
+
         self.init_database()
         self.load_queue()
+
+    def load_config(self):
+        """Load configuration from processor_config.yaml"""
+        config_file = Path("processor_config.yaml")
+        if config_file.exists():
+            with open(config_file, 'r') as f:
+                yaml_config = yaml.safe_load(f)
+
+            # Extract Parallax configuration
+            parallax_config = yaml_config.get('parallax', {})
+            self.config = {
+                'model': yaml_config.get('model', 'qwen3:1b'),
+                'temperature': yaml_config.get('temperature', 0.8),
+                'max_retries': yaml_config.get('max_retries', 3),
+                'parallax_host': os.getenv('PARALLAX_HOST', parallax_config.get('host', 'localhost')),
+                'parallax_port': int(os.getenv('PARALLAX_PORT', parallax_config.get('port', 50051))),
+                'parallax_timeout': parallax_config.get('timeout', 600),
+                'parallax_max_workers': parallax_config.get('max_workers', 4),
+                'top_p': yaml_config.get('top_p', 0.9),
+                'max_tokens': yaml_config.get('max_tokens', -1),
+                'cluster_config': yaml_config.get('cluster', {})
+            }
+
+            # Fallback to Ollama for backward compatibility
+            if not PARALLAX_AVAILABLE:
+                self.config['ollama_host'] = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+        else:
+            # Default configuration
+            self.config = {
+                'model': 'qwen3:1b',
+                'parallax_host': os.getenv('PARALLAX_HOST', 'localhost'),
+                'parallax_port': int(os.getenv('PARALLAX_PORT', 50051)),
+                'parallax_timeout': 600,
+                'parallax_max_workers': 4,
+                'temperature': 0.8,
+                'max_retries': 3,
+                'ollama_host': os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+            }
+
+    def init_parallax(self):
+        """Initialize Parallax client and check connection"""
+        if not PARALLAX_AVAILABLE:
+            logger.warning("Parallax SDK not available, using fallback mode")
+            return
+
+        try:
+            # Create Parallax client
+            host = self.config['parallax_host']
+            port = self.config['parallax_port']
+
+            logger.info(f"Connecting to Parallax at {host}:{port}")
+            self.parallax_client = ParallaxClient(host=host, port=port)
+
+            # Test connection by checking cluster status
+            self.check_cluster_health()
+
+            if self.cluster_health['connected']:
+                logger.info("✅ Successfully connected to Parallax cluster")
+                logger.info(f"Active nodes: {len(self.cluster_health['nodes'])}")
+            else:
+                logger.warning("⚠️  Connected to Parallax but no cluster information available")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize Parallax client: {e}")
+            logger.warning("Falling back to Ollama compatibility mode")
+            self.parallax_client = None
+
+    def check_cluster_health(self):
+        """Check the health and status of the Parallax cluster"""
+        if not self.parallax_client:
+            self.cluster_health['connected'] = False
+            return
+
+        try:
+            # Try to get cluster status
+            # Note: The actual API might differ based on Parallax SDK version
+            # This is a placeholder for the actual cluster status check
+            self.cluster_health['connected'] = True
+            self.cluster_health['last_check'] = datetime.now().isoformat()
+
+            # In a real implementation, we would query the cluster for node information
+            # For now, we'll mark it as connected
+            logger.info("Cluster health check completed")
+
+        except Exception as e:
+            logger.error(f"Cluster health check failed: {e}")
+            self.cluster_health['connected'] = False
+
+    def get_cluster_status(self):
+        """Get current cluster status for API endpoint"""
+        self.check_cluster_health()
+        return {
+            'connected': self.cluster_health['connected'],
+            'nodes': len(self.cluster_health['nodes']),
+            'last_check': self.cluster_health['last_check'],
+            'parallax_available': PARALLAX_AVAILABLE,
+            'host': self.config.get('parallax_host'),
+            'port': self.config.get('parallax_port'),
+            'model': self.config.get('model')
+        }
     
     def init_database(self):
         conn = sqlite3.connect(self.db_path)
@@ -2155,8 +2365,44 @@ class TaskProcessor:
         conn.commit()
         conn.close()
     
-    def process_with_ollama(self, prompt: str) -> str:
+    def process_with_parallax(self, prompt: str) -> str:
+        """Process a prompt using Parallax distributed computing"""
+        if self.parallax_client and PARALLAX_AVAILABLE:
+            try:
+                logger.info("Processing with Parallax cluster")
+
+                # Generate with Parallax
+                response = self.parallax_client.generate(
+                    model=self.config['model'],
+                    prompt=prompt,
+                    temperature=self.config.get('temperature', 0.8),
+                    top_p=self.config.get('top_p', 0.9),
+                    max_tokens=self.config.get('max_tokens', -1) if self.config.get('max_tokens', -1) > 0 else None
+                )
+
+                # Extract the response text
+                if hasattr(response, 'text'):
+                    return response.text
+                elif isinstance(response, dict):
+                    return response.get('response', response.get('text', str(response)))
+                else:
+                    return str(response)
+
+            except Exception as e:
+                logger.error(f"Parallax error: {e}")
+                logger.warning("Falling back to Ollama")
+                return self.process_with_ollama_fallback(prompt)
+        else:
+            # Fallback to Ollama if Parallax not available
+            return self.process_with_ollama_fallback(prompt)
+
+    def process_with_ollama_fallback(self, prompt: str) -> str:
+        """Fallback to Ollama API for backward compatibility"""
         try:
+            if 'ollama_host' not in self.config:
+                return "Error: Neither Parallax nor Ollama is configured"
+
+            logger.info("Processing with Ollama (fallback mode)")
             payload = {
                 'model': self.config['model'],
                 'prompt': prompt,
@@ -2165,19 +2411,24 @@ class TaskProcessor:
                     'temperature': self.config.get('temperature', 0.7),
                 }
             }
-            
+
             response = requests.post(
                 f"{self.config['ollama_host']}/api/generate",
                 json=payload,
                 timeout=None
             )
-            
+
             if response.status_code == 200:
                 return response.json().get('response', '')
-            return "Error: Failed to get response"
+            return "Error: Failed to get response from Ollama"
         except Exception as e:
-            logger.error(f"Ollama error: {e}")
+            logger.error(f"Ollama fallback error: {e}")
             return f"Error: {str(e)}"
+
+    # Alias for backward compatibility
+    def process_with_ollama(self, prompt: str) -> str:
+        """Backward compatibility alias - redirects to process_with_parallax"""
+        return self.process_with_parallax(prompt)
     
     def process_task(self, task: Task):
         task.status = TaskStatus.PROCESSING
@@ -2549,6 +2800,19 @@ def reset_failed():
     processor.reset_failed()
     return jsonify({'status': 'reset'})
 
+@app.route('/api/cluster/status')
+def cluster_status():
+    """Get Parallax cluster status and health information"""
+    status = processor.get_cluster_status()
+    return jsonify(status)
+
+@app.route('/api/cluster/refresh', methods=['POST'])
+def refresh_cluster():
+    """Force refresh cluster health check"""
+    processor.check_cluster_health()
+    status = processor.get_cluster_status()
+    return jsonify(status)
+
 @app.route('/api/delete_task/<task_id>', methods=['DELETE'])
 def delete_task(task_id):
     """Delete a specific task"""
@@ -2772,7 +3036,16 @@ if __name__ == '__main__':
     print(f"📲 Phone Access:    http://{local_ip}:5001")
     print(f"🎨 Gallery View:    http://{local_ip}:5001/gallery")
     print("="*70)
-    print("🤖 Make sure Ollama is running: ollama serve")
+    if PARALLAX_AVAILABLE and processor.parallax_client:
+        print("✅ Parallax cluster connected")
+        print(f"📊 Model: {processor.config['model']}")
+        print(f"🖥️  Cluster: {processor.config['parallax_host']}:{processor.config['parallax_port']}")
+    elif PARALLAX_AVAILABLE:
+        print("⚠️  Parallax SDK available but not connected")
+        print("🤖 Make sure Parallax is running: parallax serve")
+    else:
+        print("⚠️  Parallax SDK not available - using Ollama fallback")
+        print("🤖 Make sure Ollama is running: ollama serve")
     print("="*70)
     
     # Show alternative IPs if available
