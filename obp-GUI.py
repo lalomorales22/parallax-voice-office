@@ -83,7 +83,15 @@ class Task:
     created_at: str = ""
     updated_at: str = ""
     processing_time: float = 0
-    
+    # Phase 4: New fields for enhanced task management
+    priority: str = "medium"  # high, medium, low
+    tags: List[str] = field(default_factory=list)
+    scheduled_time: Optional[str] = None
+    parent_task_id: Optional[str] = None  # For task dependencies
+    recurring: Optional[Dict[str, Any]] = None  # For recurring tasks
+    progress: float = 0.0  # Progress percentage (0-100)
+    current_step: str = ""  # Current processing step
+
     def __post_init__(self):
         if not self.created_at:
             self.created_at = datetime.now().isoformat()
@@ -2328,9 +2336,53 @@ class TaskProcessor:
                 retry_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                processing_time REAL
+                processing_time REAL,
+                priority TEXT DEFAULT 'medium',
+                tags TEXT,
+                scheduled_time TIMESTAMP,
+                parent_task_id TEXT,
+                recurring TEXT,
+                progress REAL DEFAULT 0.0,
+                current_step TEXT DEFAULT ''
             )
         ''')
+
+        # Add indexes for better performance
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_status ON tasks(status)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_created_at ON tasks(created_at)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_priority ON tasks(priority)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_scheduled_time ON tasks(scheduled_time)')
+
+        # Migration: Add new columns if they don't exist (for existing databases)
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN priority TEXT DEFAULT 'medium'")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN tags TEXT")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN scheduled_time TIMESTAMP")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN parent_task_id TEXT")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN recurring TEXT")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN progress REAL DEFAULT 0.0")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN current_step TEXT DEFAULT ''")
+        except:
+            pass
+
         conn.commit()
         conn.close()
     
@@ -2377,9 +2429,10 @@ class TaskProcessor:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT OR REPLACE INTO tasks 
-            (id, type, content, status, results, metadata, error, retry_count, updated_at, processing_time)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO tasks
+            (id, type, content, status, results, metadata, error, retry_count, updated_at, processing_time,
+             priority, tags, scheduled_time, parent_task_id, recurring, progress, current_step)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             task.id,
             task.type.value,
@@ -2390,7 +2443,14 @@ class TaskProcessor:
             task.error,
             task.retry_count,
             datetime.now().isoformat(),
-            task.processing_time
+            task.processing_time,
+            task.priority,
+            json.dumps(task.tags) if task.tags else None,
+            task.scheduled_time,
+            task.parent_task_id,
+            json.dumps(task.recurring) if task.recurring else None,
+            task.progress,
+            task.current_step
         ))
         conn.commit()
         conn.close()
@@ -2729,7 +2789,27 @@ class TaskProcessor:
             self.save_to_db(task)
             return True
         return False
-    
+
+    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Get a task by ID and return as dictionary"""
+        task = next((t for t in self.queue if t.id == task_id), None)
+        if task:
+            task_dict = asdict(task)
+            task_dict['type'] = task.type.value
+            task_dict['status'] = task.status.value
+            return task_dict
+        return None
+
+    def update_progress(self, task_id: str, progress: float, current_step: str = ""):
+        """Update task progress (0-100) and current step"""
+        task = next((t for t in self.queue if t.id == task_id), None)
+        if task:
+            task.progress = max(0.0, min(100.0, progress))  # Clamp between 0 and 100
+            if current_step:
+                task.current_step = current_step
+            task.updated_at = datetime.now().isoformat()
+            self.save_to_db(task)
+
     def _save_results_to_file(self, task: Task):
         """Save task results to a file in the workspace directory"""
         try:
@@ -3236,6 +3316,417 @@ def get_cli_task(task_id):
     except Exception as e:
         logger.error(f"Error loading CLI task {task_id}: {e}")
         return jsonify({'error': str(e)}), 500
+
+# ===== PHASE 4: Advanced Features and UI Enhancements API Endpoints =====
+
+@app.route('/api/gallery/tasks')
+def get_gallery_tasks():
+    """
+    Enhanced endpoint for gallery view with pagination, filtering, and sorting.
+    Query parameters:
+    - page: Page number (default: 1)
+    - limit: Items per page (default: 20)
+    - type: Filter by task type
+    - status: Filter by status
+    - priority: Filter by priority
+    - tags: Comma-separated list of tags
+    - search: Search in content
+    - sort_by: Sort field (created_at, updated_at, priority, processing_time)
+    - sort_order: asc or desc (default: desc)
+    - start_date: Filter by start date (ISO format)
+    - end_date: Filter by end date (ISO format)
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 20))
+        task_type = request.args.get('type', '')
+        status = request.args.get('status', '')
+        priority = request.args.get('priority', '')
+        tags_param = request.args.get('tags', '')
+        search = request.args.get('search', '')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
+        start_date = request.args.get('start_date', '')
+        end_date = request.args.get('end_date', '')
+
+        # Build query
+        conn = sqlite3.connect(processor.db_path)
+        cursor = conn.cursor()
+
+        query = "SELECT id, type, content, status, results, metadata, error, retry_count, created_at, updated_at, processing_time, priority, tags, scheduled_time, parent_task_id, recurring, progress, current_step FROM tasks WHERE 1=1"
+        params = []
+
+        if task_type:
+            query += " AND type = ?"
+            params.append(task_type)
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        if priority:
+            query += " AND priority = ?"
+            params.append(priority)
+
+        if search:
+            query += " AND (content LIKE ? OR id LIKE ?)"
+            params.extend([f'%{search}%', f'%{search}%'])
+
+        if start_date:
+            query += " AND created_at >= ?"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND created_at <= ?"
+            params.append(end_date)
+
+        # Tag filtering
+        if tags_param:
+            query += " AND tags LIKE ?"
+            params.append(f'%{tags_param}%')
+
+        # Sorting
+        valid_sort_fields = ['created_at', 'updated_at', 'priority', 'processing_time', 'status']
+        if sort_by in valid_sort_fields:
+            query += f" ORDER BY {sort_by} {sort_order.upper()}"
+        else:
+            query += " ORDER BY created_at DESC"
+
+        # Get total count
+        count_query = query.replace("SELECT id, type, content, status, results, metadata, error, retry_count, created_at, updated_at, processing_time, priority, tags, scheduled_time, parent_task_id, recurring, progress, current_step FROM tasks", "SELECT COUNT(*) FROM tasks")
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()[0]
+
+        # Add pagination
+        query += " LIMIT ? OFFSET ?"
+        params.extend([limit, (page - 1) * limit])
+
+        cursor.execute(query, params)
+        tasks_data = []
+        for row in cursor.fetchall():
+            task = {
+                'id': row[0],
+                'type': row[1],
+                'content': row[2],
+                'status': row[3],
+                'results': json.loads(row[4]) if row[4] else {},
+                'metadata': json.loads(row[5]) if row[5] else {},
+                'error': row[6],
+                'retry_count': row[7],
+                'created_at': row[8],
+                'updated_at': row[9],
+                'processing_time': row[10],
+                'priority': row[11] if row[11] else 'medium',
+                'tags': json.loads(row[12]) if row[12] else [],
+                'scheduled_time': row[13],
+                'parent_task_id': row[14],
+                'recurring': json.loads(row[15]) if row[15] else None,
+                'progress': row[16] if row[16] else 0.0,
+                'current_step': row[17] if row[17] else ''
+            }
+            tasks_data.append(task)
+
+        conn.close()
+
+        return jsonify({
+            'tasks': tasks_data,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total_count,
+                'pages': (total_count + limit - 1) // limit
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error fetching gallery tasks: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/task/<task_id>/duplicate', methods=['POST'])
+def duplicate_task(task_id):
+    """Duplicate a task"""
+    task = next((t for t in processor.queue if t.id == task_id), None)
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    # Create new task ID
+    new_id = f"{task.type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:17]}"
+
+    # Create duplicate task
+    new_task = Task(
+        id=new_id,
+        type=task.type,
+        content=task.content,
+        config_name=task.config_name,
+        status=TaskStatus.PENDING,
+        metadata=task.metadata.copy(),
+        priority=task.priority,
+        tags=task.tags.copy() if task.tags else [],
+        parent_task_id=task.parent_task_id,
+        recurring=task.recurring.copy() if task.recurring else None
+    )
+
+    processor.queue.append(new_task)
+    processor.save_queue()
+    processor.save_to_db(new_task)
+
+    return jsonify({'message': 'Task duplicated successfully', 'new_task_id': new_id})
+
+@app.route('/api/task/<task_id>/priority', methods=['PUT'])
+def update_task_priority(task_id):
+    """Update task priority"""
+    data = request.get_json()
+    priority = data.get('priority', 'medium')
+
+    if priority not in ['high', 'medium', 'low']:
+        return jsonify({'error': 'Invalid priority. Must be high, medium, or low'}), 400
+
+    task = next((t for t in processor.queue if t.id == task_id), None)
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    task.priority = priority
+    task.updated_at = datetime.now().isoformat()
+    processor.save_queue()
+    processor.save_to_db(task)
+
+    return jsonify({'message': 'Priority updated successfully'})
+
+@app.route('/api/task/<task_id>/tags', methods=['PUT'])
+def update_task_tags(task_id):
+    """Update task tags"""
+    data = request.get_json()
+    tags = data.get('tags', [])
+
+    if not isinstance(tags, list):
+        return jsonify({'error': 'Tags must be a list'}), 400
+
+    task = next((t for t in processor.queue if t.id == task_id), None)
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    task.tags = tags
+    task.updated_at = datetime.now().isoformat()
+    processor.save_queue()
+    processor.save_to_db(task)
+
+    return jsonify({'message': 'Tags updated successfully'})
+
+@app.route('/api/tasks/bulk', methods=['POST'])
+def bulk_task_operations():
+    """
+    Perform bulk operations on tasks
+    Body: {
+        "operation": "delete"|"update_priority"|"update_tags"|"update_status",
+        "task_ids": ["id1", "id2", ...],
+        "value": <value for the operation>
+    }
+    """
+    data = request.get_json()
+    operation = data.get('operation')
+    task_ids = data.get('task_ids', [])
+    value = data.get('value')
+
+    if not operation or not task_ids:
+        return jsonify({'error': 'Missing operation or task_ids'}), 400
+
+    affected_count = 0
+
+    if operation == 'delete':
+        for task_id in task_ids:
+            if processor.delete_task(task_id):
+                affected_count += 1
+
+    elif operation == 'update_priority':
+        if value not in ['high', 'medium', 'low']:
+            return jsonify({'error': 'Invalid priority'}), 400
+        for task_id in task_ids:
+            task = next((t for t in processor.queue if t.id == task_id), None)
+            if task:
+                task.priority = value
+                task.updated_at = datetime.now().isoformat()
+                processor.save_to_db(task)
+                affected_count += 1
+        processor.save_queue()
+
+    elif operation == 'update_tags':
+        if not isinstance(value, list):
+            return jsonify({'error': 'Tags must be a list'}), 400
+        for task_id in task_ids:
+            task = next((t for t in processor.queue if t.id == task_id), None)
+            if task:
+                task.tags = value
+                task.updated_at = datetime.now().isoformat()
+                processor.save_to_db(task)
+                affected_count += 1
+        processor.save_queue()
+
+    elif operation == 'update_status':
+        for task_id in task_ids:
+            task = next((t for t in processor.queue if t.id == task_id), None)
+            if task:
+                try:
+                    task.status = TaskStatus(value)
+                    task.updated_at = datetime.now().isoformat()
+                    processor.save_to_db(task)
+                    affected_count += 1
+                except ValueError:
+                    pass
+        processor.save_queue()
+
+    else:
+        return jsonify({'error': 'Unknown operation'}), 400
+
+    return jsonify({'message': f'Operation completed on {affected_count} tasks', 'affected': affected_count})
+
+@app.route('/api/tasks/export/bulk', methods=['POST'])
+def bulk_export_tasks():
+    """Export multiple tasks as a ZIP file"""
+    import zipfile
+    from io import BytesIO
+
+    data = request.get_json()
+    task_ids = data.get('task_ids', [])
+
+    if not task_ids:
+        return jsonify({'error': 'No task IDs provided'}), 400
+
+    # Create ZIP in memory
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for task_id in task_ids:
+            task = next((t for t in processor.queue if t.id == task_id), None)
+            if task:
+                task_dict = asdict(task)
+                task_dict['type'] = task.type.value
+                task_dict['status'] = task.status.value
+                json_data = json.dumps(task_dict, indent=2)
+                zip_file.writestr(f'{task_id}.json', json_data)
+
+    zip_buffer.seek(0)
+    return send_file(
+        zip_buffer,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=f'tasks_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip'
+    )
+
+# Server-Sent Events for real-time updates
+@app.route('/api/events')
+def sse_events():
+    """Server-Sent Events endpoint for real-time task updates"""
+    def event_stream():
+        last_update = datetime.now()
+        while True:
+            # Check for updates every second
+            time.sleep(1)
+
+            # Get current tasks state
+            tasks_data = []
+            for task in processor.queue:
+                task_dict = {
+                    'id': task.id,
+                    'status': task.status.value,
+                    'progress': task.progress,
+                    'current_step': task.current_step,
+                    'updated_at': task.updated_at
+                }
+                tasks_data.append(task_dict)
+
+            # Get processing status
+            stats = processor.get_stats()
+
+            event_data = {
+                'tasks': tasks_data,
+                'stats': stats,
+                'processing': processor.processing,
+                'timestamp': datetime.now().isoformat()
+            }
+
+            yield f"data: {json.dumps(event_data)}\n\n"
+
+    return app.response_class(
+        event_stream(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
+
+@app.route('/api/metadata/templates')
+def get_metadata_templates():
+    """Get predefined metadata templates for different task types"""
+    templates = {
+        'search': {
+            'template': {
+                'search_query': '',
+                'comparison': False,
+                'filename': 'research_report.md',
+                'depth': 'comprehensive'
+            },
+            'description': 'Template for search and research tasks'
+        },
+        'create': {
+            'template': {
+                'tone': 'professional',
+                'audience': 'general',
+                'format': 'markdown',
+                'filename': 'content.md'
+            },
+            'description': 'Template for content creation tasks'
+        },
+        'code': {
+            'template': {
+                'language': 'python',
+                'filename': 'script.py',
+                'include_docs': True,
+                'include_tests': False
+            },
+            'description': 'Template for code generation tasks'
+        },
+        'process': {
+            'template': {
+                'operation': 'summarize',
+                'tone': 'professional',
+                'output_format': 'markdown'
+            },
+            'description': 'Template for text processing tasks'
+        }
+    }
+    return jsonify(templates)
+
+@app.route('/api/metadata/validate', methods=['POST'])
+def validate_metadata():
+    """Validate metadata for a task type"""
+    data = request.get_json()
+    task_type = data.get('type')
+    metadata = data.get('metadata', {})
+
+    errors = []
+    warnings = []
+
+    # Basic validation
+    if task_type == 'search':
+        if not metadata.get('search_query') and not data.get('content'):
+            errors.append('Search query is required for search tasks')
+
+    elif task_type == 'code':
+        if metadata.get('language'):
+            valid_languages = ['python', 'javascript', 'java', 'go', 'rust', 'c', 'cpp', 'ruby', 'php']
+            if metadata['language'] not in valid_languages:
+                warnings.append(f"Unusual language: {metadata['language']}")
+
+    # Check filename extension
+    if metadata.get('filename'):
+        filename = metadata['filename']
+        if '.' not in filename:
+            warnings.append('Filename should include an extension')
+
+    return jsonify({
+        'valid': len(errors) == 0,
+        'errors': errors,
+        'warnings': warnings
+    })
 
 if __name__ == '__main__':
     # Run network diagnostics first

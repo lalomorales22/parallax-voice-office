@@ -46,6 +46,83 @@ Perfect for busy professionals who want an AI assistant with the power of Claude
 - **Visual Gallery**: Stunning dark-themed, filterable gallery view to browse and export completed tasks
 - **100% Local & Private**: Your data never leaves your machines (unless you enable optional web search)
 
+## Phase 4 New Features
+
+### Advanced Task Management (Phase 4)
+
+Parallax Voice Office now includes comprehensive task management capabilities:
+
+**Task Prioritization:**
+- Set task priority: High, Medium, or Low
+- Filter and sort tasks by priority
+- Visual priority indicators in the gallery
+
+**Task Organization:**
+- Add tags to categorize tasks (e.g., "research", "urgent", "documentation")
+- Filter tasks by tags
+- Support for multiple tags per task
+
+**Progress Tracking:**
+- Real-time progress updates (0-100%)
+- Current step display during processing
+- Live progress bars in the UI
+
+**Task Dependencies:**
+- Link tasks together with parent-child relationships
+- Track task dependencies
+- Foundation for workflow automation
+
+**Bulk Operations:**
+- Select multiple tasks at once
+- Bulk delete, update priority, update tags
+- Bulk export selected tasks as ZIP
+
+**Enhanced Gallery:**
+- Pagination support (configurable page size)
+- Advanced filtering (type, status, priority, tags, date range)
+- Multiple sort options (date, priority, processing time)
+- Search across task content and IDs
+
+**Real-Time Updates:**
+- Server-Sent Events (SSE) for live task monitoring
+- Automatic UI updates without page refresh
+- Real-time statistics and cluster status
+
+**Metadata System:**
+- Predefined templates for common task types
+- Metadata validation with helpful warnings
+- Structured metadata for better task organization
+
+**Export Capabilities:**
+- Export individual tasks as JSON
+- Bulk export multiple tasks as ZIP archive
+- Preserve all task data including results and metadata
+
+### API Documentation
+
+New Phase 4 API endpoints:
+
+```bash
+# Enhanced Gallery
+GET /api/gallery/tasks?page=1&limit=20&type=search&priority=high
+
+# Task Management
+POST /api/task/<task_id>/duplicate
+PUT /api/task/<task_id>/priority
+PUT /api/task/<task_id>/tags
+
+# Bulk Operations
+POST /api/tasks/bulk
+POST /api/tasks/export/bulk
+
+# Real-Time Updates
+GET /api/events  # Server-Sent Events stream
+
+# Metadata
+GET /api/metadata/templates
+POST /api/metadata/validate
+```
+
 ## Quick Start Guide
 
 ### 1. Prerequisites
@@ -636,17 +713,32 @@ make lint
 - [x] Task pipeline integration with MCP tools
 - [x] API endpoints for MCP server status and discovery
 
+**✅ Phase 4 - COMPLETED:**
+- [x] Enhanced Gallery View with pagination, filtering, and sorting
+- [x] Real-time processing updates via Server-Sent Events (SSE)
+- [x] Task management enhancements (priority, tags, dependencies)
+- [x] Task progress tracking (0-100% with current step display)
+- [x] Bulk operations (select multiple tasks, bulk delete/update)
+- [x] Task duplication functionality
+- [x] Enhanced metadata system with templates and validation
+- [x] Individual and bulk ZIP export capabilities
+- [x] Date range filtering for tasks
+- [x] Advanced search and filtering across all task attributes
+
 **🚧 In Progress:**
-- [ ] Phase 4: Advanced Features and UI Enhancements
+- [ ] Phase 5: Production Readiness and Polish
 
 **📋 Planned Enhancements:**
-- [ ] Always-on voice activation with wake word (Phase 4)
+- [ ] Always-on voice activation with wake word (Phase 5)
+- [ ] Advanced UI components (drag-and-drop, autocomplete)
 - [ ] Mobile app for iOS/Android
 - [ ] Advanced cluster load balancing
-- [ ] Real-time task streaming results
+- [ ] Live log streaming
+- [ ] Task sharing and collaboration features
 - [ ] Integration with calendar/email tools
 - [ ] Plugin marketplace for custom MCP servers
 - [ ] HTTPS support for network voice access
+- [ ] Comprehensive testing suite and CI/CD pipeline
 
 See [TASKS.md](TASKS.md) for the complete implementation roadmap.
 
