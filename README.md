@@ -1,23 +1,17 @@
 # Parallax Voice Office
 
-
-
 **Your intelligent voice-enabled task management assistant powered by distributed computing.**
 
-A voice-first AI office assistant that helps you manage tasks, process information, and get work done using a multi-node cluster of computers in your home. Speak naturally to add tasks, then run processing across your distributed compute network when you're ready.
+A voice-first AI office assistant that helps you manage tasks, process information, and get work done using a multi-node cluster of computers in your home. Speak naturally to add tasks, then run processing across your distributed compute network.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Parallax](https://img.shields.io/badge/parallax-powered-purple.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Voice](https://img.shields.io/badge/voice-enabled-green.svg)
 
-
-
-
-
 ## The Core Concept
 
-**Parallax Voice Office** transforms your home computers into a distributed AI assistant you can talk to. Using Parallax's multi-node cluster technology, multiple machines work together to share compute resources, making AI processing faster and more efficient.
+Transform your home computers into a distributed AI assistant you can talk to. Using Parallax's multi-node cluster technology, multiple machines work together to share compute resources, making AI processing faster and more efficient.
 
 Simply speak your tasks into the system, and they're queued for processing. When you're ready, trigger processing across your cluster. The voice interface means you can add tasks hands-free while working, and the distributed architecture means faster processing across multiple machines.
 
@@ -25,113 +19,46 @@ Perfect for busy professionals who want an AI assistant with the power of Claude
 
 ## ✨ Key Features
 
-- **🎙️ Voice Interface** ✅ FULLY IMPLEMENTED: Speak naturally to add tasks with Web Speech API support
-  - Real-time voice-to-text transcription
-  - Multi-language support (11 languages including English, Spanish, French, German, Japanese, Chinese)
-  - Smart task type detection and metadata extraction from voice
+- **🎙️ Voice Interface**: Speak naturally to add tasks with Web Speech API
+  - Multi-language support (11 languages)
+  - Smart task type and metadata extraction
   - Optional text-to-speech feedback
-  - Continuous and single-shot recording modes
+
 - **🔗 Multi-Node Cluster**: Distributed processing across multiple home computers using Parallax SDK
-- **🛠️ Tool Capabilities**: MCP (Model Context Protocol) integration for file operations, web search, and more
-- **⚡ Lightweight & Fast**: Starts with qwen3:1b model, expandable to larger models as needed
-- **🎛️ Web Control Panel**: Beautiful dark-themed GUI for task management, cluster monitoring, and results
-- **📱 Phone & Tablet Access**: Queue tasks from anywhere on your network with a mobile-responsive interface
-- **Universal Task Engine**: Handles a wide variety of tasks:
-  - **search**: In-depth research and report generation with web search
-  - **create**: Generate new content like articles, documentation, or creative writing
-  - **process**: Transform existing content—summarize, rephrase, or change its tone
-  - **code**: Generate, debug, or document software code
-  - **chain**: Execute multi-step workflows where the output of one step feeds into the next
-- **Full File Management**: Complete file CRUD (Create, Read, Update, Delete) with 15+ operations
-- **Visual Gallery**: Stunning dark-themed, filterable gallery view to browse and export completed tasks
-- **100% Local & Private**: Your data never leaves your machines (unless you enable optional web search)
 
-## Phase 4 New Features
+- **🛠️ Tool Capabilities**: MCP (Model Context Protocol) integration
+  - File operations (15+ tools)
+  - Web search (Serper/Tavily APIs)
+  - JSON/YAML parsing and HTTP client
 
-### Advanced Task Management (Phase 4)
+- **⚡ Lightweight & Fast**: Starts with qwen3:1b model, expandable as needed
 
-Parallax Voice Office now includes comprehensive task management capabilities:
+- **🎛️ Web Control Panel**: Beautiful dark-themed GUI with:
+  - Task prioritization and tagging
+  - Real-time progress tracking
+  - Bulk operations
+  - Advanced gallery with pagination and filtering
+  - Server-Sent Events for live updates
 
-**Task Prioritization:**
-- Set task priority: High, Medium, or Low
-- Filter and sort tasks by priority
-- Visual priority indicators in the gallery
+- **📱 Mobile-Responsive**: Queue tasks from anywhere on your network
 
-**Task Organization:**
-- Add tags to categorize tasks (e.g., "research", "urgent", "documentation")
-- Filter tasks by tags
-- Support for multiple tags per task
+- **🔒 Production Ready**:
+  - HTTPS support with SSL certificates
+  - Automated backups and recovery
+  - Database optimization tools
+  - Configuration validation
+  - Comprehensive test suite
 
-**Progress Tracking:**
-- Real-time progress updates (0-100%)
-- Current step display during processing
-- Live progress bars in the UI
+- **100% Local & Private**: Your data never leaves your machines
 
-**Task Dependencies:**
-- Link tasks together with parent-child relationships
-- Track task dependencies
-- Foundation for workflow automation
-
-**Bulk Operations:**
-- Select multiple tasks at once
-- Bulk delete, update priority, update tags
-- Bulk export selected tasks as ZIP
-
-**Enhanced Gallery:**
-- Pagination support (configurable page size)
-- Advanced filtering (type, status, priority, tags, date range)
-- Multiple sort options (date, priority, processing time)
-- Search across task content and IDs
-
-**Real-Time Updates:**
-- Server-Sent Events (SSE) for live task monitoring
-- Automatic UI updates without page refresh
-- Real-time statistics and cluster status
-
-**Metadata System:**
-- Predefined templates for common task types
-- Metadata validation with helpful warnings
-- Structured metadata for better task organization
-
-**Export Capabilities:**
-- Export individual tasks as JSON
-- Bulk export multiple tasks as ZIP archive
-- Preserve all task data including results and metadata
-
-### API Documentation
-
-New Phase 4 API endpoints:
-
-```bash
-# Enhanced Gallery
-GET /api/gallery/tasks?page=1&limit=20&type=search&priority=high
-
-# Task Management
-POST /api/task/<task_id>/duplicate
-PUT /api/task/<task_id>/priority
-PUT /api/task/<task_id>/tags
-
-# Bulk Operations
-POST /api/tasks/bulk
-POST /api/tasks/export/bulk
-
-# Real-Time Updates
-GET /api/events  # Server-Sent Events stream
-
-# Metadata
-GET /api/metadata/templates
-POST /api/metadata/validate
-```
-
-## Quick Start Guide
+## Quick Start
 
 ### 1. Prerequisites
 
-Before starting, ensure you have:
 - Python 3.8 or higher
 - Parallax SDK installed and configured
 - One or more Linux/CPU machines for your cluster
-- Microphone for voice input (built-in or USB)
+- Microphone for voice input
 
 ### 2. Install Parallax
 
@@ -141,200 +68,88 @@ Follow the [Parallax installation guide](https://parallax.xyz/docs) to set up yo
 # On your host machine
 parallax init
 
-# On each additional node machine (optional but recommended)
+# On each additional node (optional)
 parallax node join <host-ip>
 ```
 
-### 3. Clone and Install Parallax Voice Office
+### 3. Install Parallax Voice Office
 
 ```bash
-# Clone the repository
 git clone https://github.com/lalomorales22/parallax-voice-office
 cd parallax-voice-office
 
-# We recommend 'uv' for fast package management
-# Install uv if you don't have it:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Create a virtual environment and activate it
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Run the interactive installer (Recommended)
+# Run the interactive installer
 python install.py
 ```
 
-The installer will check your dependencies, verify your Parallax connection, and help you get set up.
-
-### 4. Download the AI Model
+### 4. Download AI Model
 
 ```bash
-# Start with the lightweight qwen3:1b model (recommended for testing)
+# Start with lightweight qwen3:1b
 parallax pull qwen3:1b
 
-# Or use a more powerful model if you have the resources
+# Or use a more powerful model
 parallax pull llama3.2:3b
 ```
 
 ### 5. Start Parallax
 
-Ensure Parallax is running on your host machine:
-
 ```bash
-# Terminal 1: Start the Parallax server
-parallax run qwen3:1b
+parallax serve
 ```
 
-### 6. Launch the Voice Office
+### 6. Launch Voice Office
 
 ```bash
-# Terminal 2: Start the web application
 python obp-GUI.py
 ```
 
-Access the GUI on your computer at **http://localhost:5001**.
-
-To access from your phone or another device, use the "Network Access" URL shown in the startup message (e.g., http://192.168.0.64:5001).
+Access the GUI at **http://localhost:5001** or from your phone using the network URL shown in the startup message.
 
 ## How It Works
 
-### Voice-First Task Management
+### Voice-First Workflow
 
-1. **Speak Your Tasks**: Click the 🎤 microphone button in the web interface and speak naturally:
+1. **Speak Your Tasks**: Click 🎤 and speak naturally
    - "Search for the latest AI safety research"
    - "Write a blog post about quantum computing"
    - "Create a Python script to analyze CSV files"
 
-2. **Task Queue**: Tasks are added to your queue with intelligent metadata extraction from your voice input. Review and edit any details before queuing.
+2. **Task Queue**: Tasks are added with intelligent metadata extraction
 
-3. **Distributed Processing**: When you're ready, start processing. Your Parallax cluster distributes work across nodes for faster completion. Multiple machines work together to process tasks efficiently.
+3. **Distributed Processing**: Your Parallax cluster distributes work across nodes
 
-4. **Tool Integration**: Through MCP (Model Context Protocol), the assistant can:
+4. **Tool Integration**: Through MCP, the assistant can:
    - Search the web for real-time information
    - Manage files in your workspace
    - Execute code and validate results
-   - Perform complex multi-step operations
 
-5. **Results & History**: View completed tasks in the gallery, export results, and track your work history. All results are saved to both a database and individual files.
+5. **Results & History**: View completed tasks in the gallery and export results
 
-### Task Types & Metadata
+### Task Types
 
-You can create tasks either by voice or through the GUI's metadata builder. The system supports several task types:
+- **search**: Research and compile information with web search
+- **create**: Generate articles, documentation, code, or creative writing
+- **process**: Transform content—summarize, rephrase, change tone
+- **code**: Generate, debug, or document software code
+- **chain**: Multi-step workflows with dependent steps
+- **file_ops**: File operations like search, create, update, delete
 
-**Task Types:**
+## Configuration
 
-```text
-{search}
-Search for and compile research on any topic with optional web search integration.
+### Web Search (Optional)
 
-{create}
-Generate new content like articles, documentation, code, or creative writing.
-
-{process}
-Transform existing content—summarize, rephrase, change tone, or reformat.
-
-{code}
-Generate, debug, or document software code in any programming language.
-
-{chain}
-Execute multi-step workflows where outputs feed into subsequent steps.
-
-{file_ops}
-Perform file operations like search, list, create, update, or delete files.
-```
-
-**Example Voice Commands:**
-
-- "Search for renewable energy trends in 2025"
-- "Create a professional email about the project deadline"
-- "Process this report and make it more concise"
-- "Write a Python function to validate email addresses"
-- "Search all Python files for TODO comments"
-
-### Metadata Guide
-
-Metadata customizes how tasks are processed. You can add metadata through:
-
-**GUI Method** (Recommended):
-1. Select your task type
-2. Use the "Add Metadata" button to add key-value pairs
-3. The system automatically converts to JSON
-
-**Voice Method**:
-The system extracts metadata from your spoken request automatically.
-
-**Common Metadata Options:**
-
-For Search Tasks:
-```json
-{
-  "search_query": "AI safety 2025",
-  "comparison": true,
-  "filename": "research_report.md"
-}
-```
-
-For Content Creation:
-```json
-{
-  "tone": "professional",
-  "audience": "executives",
-  "format": "bullet_points",
-  "filename": "content.md"
-}
-```
-
-For Code Generation:
-```json
-{
-  "language": "python",
-  "filename": "analyzer.py",
-  "include_docs": true,
-  "include_tests": true
-}
-```
-
-See [METADATA_GUIDE.md](METADATA_GUIDE.md) for comprehensive metadata options.
-
-## Parallax Cluster Setup
-
-### Single Machine (Development)
-
-Start with just your main computer for testing:
+Get a free API key from [serper.dev](https://serper.dev) or [tavily.com](https://tavily.com) and add to `.env`:
 
 ```bash
-parallax run qwen3:1b
+SERPER_API_KEY=your_key_here
+# or
+TAVILY_API_KEY=your_key_here
 ```
 
-The Voice Office application will automatically connect to your local Parallax instance.
+### Parallax Cluster
 
-### Multi-Node Cluster (Recommended for Production)
-
-Set up multiple machines to share compute and process tasks faster:
-
-**On Host Machine:**
-```bash
-# Start Parallax server with network access
-parallax serve --host 0.0.0.0
-```
-
-**On Each Node Machine:**
-```bash
-# Join the cluster (replace with your host IP)
-parallax node join 192.168.1.100:50051
-```
-
-**Verify Your Cluster:**
-```bash
-parallax nodes list
-# Should show all connected nodes and their status
-```
-
-The application automatically detects and uses your entire Parallax cluster for distributed processing. Tasks are intelligently distributed across available nodes for optimal performance.
-
-### Cluster Configuration
-
-Configure your cluster settings in `processor_config.yaml`:
+Configure in `processor_config.yaml`:
 
 ```yaml
 parallax:
@@ -345,414 +160,128 @@ parallax:
   timeout: 600
 ```
 
-## Model Context Protocol (MCP)
-
-Parallax Voice Office uses Model Context Protocol to provide tool capabilities similar to Claude Desktop and Gemini CLI.
-
-### Available Tools
-
-- **File Operations**: Create, read, update, delete, search, and manage files
-- **Web Search**: Real-time information via Serper or Tavily APIs
-- **Code Execution**: Run and test generated code safely
-- **Workspace Management**: Browse, organize, and export results
-
-### Adding MCP Servers
-
-Configure additional MCP servers in `mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "mcp-server-filesystem",
-      "args": ["--workspace", "./workspace"]
-    },
-    "web-search": {
-      "command": "mcp-server-tavily",
-      "env": {
-        "TAVILY_API_KEY": "your_key_here"
-      }
-    }
-  }
-}
-```
-
-See the [MCP documentation](https://modelcontextprotocol.io) for more servers and capabilities.
-
-## Advanced Setup & Configuration
-
-### Web Search Integration (Optional but Recommended)
-
-Enable real-time information access for your tasks:
-
-**Get a Free API Key:**
-
-- **Serper**: [serper.dev](https://serper.dev) (2,500 free searches/month)
-- **Tavily**: [tavily.com](https://tavily.com) (1,000 free searches/month)
-
-**Configure:**
+### HTTPS Setup (For Network Voice Access)
 
 ```bash
-# Copy the example environment file
-cp .env.example .env
-
-# Edit the .env file and add your key
-SERPER_API_KEY=your_serper_key_here
-# or TAVILY_API_KEY=your_tavily_key_here
+python setup_https.py --self-signed
 ```
 
-Restart the application to enable web search capabilities.
-
-### Custom Workflows (YAML)
-
-Define or modify task processing steps by editing YAML files in the `task_configs/` directory:
-
-**Example (search_tasks.yaml):**
-
-```yaml
-type: search
-steps:
-  - name: web_search
-    plugin: web_search
-    optional: true
-  - name: summarize
-    prompt: "Summarize these search results: {web_search_result}"
-  - name: create_report
-    prompt: "Create a detailed report: {summarize_result}"
-  - name: save_report
-    plugin: file_operations
-    operation: create
-    filename_template: "search_{task_id}.md"
-```
-
-### Bulk Task Import
-
-You can still import multiple tasks at once using a text file:
-
-**Create a tasks.txt file:**
-
-```text
-{search}
-search_query=AI safety 2025::Research the latest developments in AI safety.
-
-{create}
-tone=professional,filename=blog_post.md::Write a blog post about quantum computing.
-
-{code}
-language=python,filename=analyzer.py::Create a data visualization script using pandas.
-```
-
-**Import via GUI:**
-
-1. Go to the "Import Tasks" section
-2. Upload your tasks.txt file
-3. Review and queue all tasks at once
-
-## Using Voice Commands
-
-### Adding Tasks by Voice ✅ NOW AVAILABLE
-
-1. Click the 🎤 **microphone button** in the web interface
-2. Speak your task naturally - examples:
-   - "Search for the latest AI safety research and save to ai_safety.md"
-   - "Create a professional email to executives about the project deadline"
-   - "Write a Python script to analyze CSV files with documentation and tests"
-   - "Process this report and make it more concise"
-3. Watch real-time transcription as you speak (green text = finalized, gray = interim)
-4. The system automatically extracts task type and metadata from your voice
-5. Click "Interpret Task" to process your spoken command
-6. Review the interpretation and click "Add to Queue"
-
-### Voice Settings Panel (Click ⚙️ Voice Settings)
-
-Configure your voice experience:
-
-- **Language**: Choose from 11 languages
-  - English (US/UK), Spanish (Spain/Mexico), French, German, Italian
-  - Portuguese (Brazil), Japanese, Chinese (Simplified), Korean
-- **Voice Feedback**: Toggle text-to-speech confirmations on/off
-- **Auto-detect Task Type**: Automatically determine task type from your speech
-- **Continuous Listening**: Keep microphone active until you click stop (vs. single command mode)
-
-### Voice Features
-
-- **30-second timeout**: Recording automatically stops after 30 seconds of active listening
-- **Browser compatibility check**: Alerts if your browser doesn't support voice input
-- **Permission handling**: Clear prompts if microphone access is needed
-- **Real-time feedback**: Visual indicators show listening (red pulsing), processing (orange), or idle (blue)
-- **Error recovery**: Helpful messages for no-speech, network errors, or permission issues
-
-### Voice Command Tips
-
-**Task Type Detection:**
-- Say "search for..." or "research..." for search tasks
-- Say "create...", "write...", or "generate..." for content creation
-- Say "write code..." or "create a script..." for coding tasks
-- Say "process...", "improve...", or "summarize..." for text processing
-
-**Metadata Extraction:**
-The system intelligently extracts:
-- **Filenames**: "save to report.md", "call it analyzer.py", "output as summary.txt"
-- **Tone**: "professional", "casual", "friendly", "technical"
-- **Audience**: "for executives", "for developers", "for beginners"
-- **Format**: "as bullet points", "in markdown", "as an email", "as JSON"
-- **Code features**: "with documentation", "with tests", "in Python"
-
-**Best Practices:**
-- Speak clearly at a normal pace
-- Include specific details: filenames, tone, audience
-- Use command words: "search", "create", "write code", "process"
-- Review the interpretation before queuing
-- Enable voice feedback in settings to hear confirmations
-
-## Docker Deployment (Recommended for Production)
-
-Docker provides an isolated and consistent environment for running Parallax Voice Office.
-
-**Run Setup Script:**
+## Docker Deployment
 
 ```bash
-./docker-setup.sh
-```
-
-**Start with Docker Compose:**
-
-```bash
-# Build and start the containers
+# Build and start
 docker-compose up --build -d
+
+# With auto-backup service
+docker-compose --profile backup up -d
 ```
 
-**Access the Application:**
-- Web GUI: http://localhost:5001
-- Network Access: http://your-server-ip:5001
+Access at http://localhost:5001
 
-**Manage:**
+## Utilities
 
-- **View logs**: `docker-compose logs -f`
-- **Stop**: `docker-compose down`
-- **Restart**: `docker-compose restart`
+### Backup Management
+```bash
+# Create backup
+python backup_manager.py create
 
-**Docker + Parallax:**
+# List backups
+python backup_manager.py list
 
-Ensure your `docker-compose.yml` points to your Parallax host:
-
-```yaml
-environment:
-  - PARALLAX_HOST=host.docker.internal
-  - PARALLAX_PORT=50051
+# Restore backup
+python backup_manager.py restore --name backup_20250118_120000
 ```
 
-For Linux, you may need to use `172.17.0.1` instead of `host.docker.internal`.
+### Database Optimization
+```bash
+# Analyze database
+python db_optimizer.py --analyze
 
-## Troubleshooting Guide
+# Full optimization
+python db_optimizer.py --optimize
 
-### 1. Quick Diagnosis
+# Clean up old tasks
+python db_optimizer.py --cleanup-old --days 30
+```
 
-Run the connection test script to diagnose common issues:
+### Configuration Validation
+```bash
+python config_validator.py
+```
+
+## Testing
 
 ```bash
-python test_connection.py
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=. --cov-report=html
 ```
 
-### 2. Parallax Connection Issues
-
-If the application can't connect to Parallax:
-
-- **Verify Parallax is running**: `parallax status`
-- **Check the model is loaded**: `parallax models list`
-- **Test connection**: `parallax chat "Hello"` should respond
-- **Check configuration**: Ensure `processor_config.yaml` has correct host/port
-- **Firewall**: Ensure port 50051 is open for cluster communication
-
-### 3. Voice Recognition Issues
-
-If voice input isn't working:
-
-- **Browser compatibility**: The app will show a yellow alert if voice isn't supported
-  - ✅ Supported: Chrome, Edge, Safari (desktop & mobile)
-  - ❌ Not supported: Firefox (limited support), some older browsers
-- **Microphone permissions**: Red alert appears if permission is denied
-  - Click the 🎤 button and allow microphone access when prompted
-  - Check browser address bar for blocked permission icons
-- **HTTPS requirement**: Voice API requires HTTPS or localhost
-  - ✅ localhost works for local testing
-  - For network access, you may need HTTPS (see Phase 5 in TASKS.md)
-- **Audio settings**: Check system audio input
-  - macOS: System Preferences → Sound → Input
-  - Windows: Settings → System → Sound → Input
-- **No speech detected**: Speak clearly within 3-5 seconds of clicking the mic button
-- **Network errors**: Voice recognition may use cloud services; check internet connection
-
-### 4. Mobile / Network Access Issues
-
-If you can't access from your phone:
-
-- **Same Network**: Ensure phone and computer are on the same Wi-Fi
-- **Correct IP**: Use the "Network Access" URL from startup message
-- **Firewall**:
-  - **macOS**: System Preferences → Security & Privacy → Firewall → Allow Python
-  - **Linux**: `sudo ufw allow 5001`
-- **Network Test**: `python network_test.py` for detailed diagnostics
-
-### 5. Docker Issues
-
-If Docker container can't connect to Parallax:
-
-- Ensure Parallax is running on host: `parallax serve`
-- Check `docker-compose.yml` has correct `PARALLAX_HOST`
-- Run `./docker-setup.sh` again if database errors occur
-- Rebuild: `docker-compose up --build`
-
-### 6. Cluster Node Issues
-
-If nodes aren't joining the cluster:
-
-- **Network connectivity**: Ensure nodes can ping the host
-- **Firewall**: Open port 50051 on host machine
-- **Correct IP**: Use host's local IP, not 127.0.0.1
-- **Verify**: `parallax nodes list` should show all nodes
-
-### 7. API Key / Web Search Issues
-
-If web search isn't working:
-
-- Verify `.env` file exists and contains actual API key
-- Restart application after editing `.env`
-- Check API key is valid at provider's dashboard
-- Test with simple search task first
-
-## 🎨 Design Philosophy
-
-**Parallax Voice Office** features a carefully crafted dark theme optimized for professional use:
-
-- Deep black backgrounds with subtle gradient overlays
-- Vibrant accent colors for improved visibility
-- Glassmorphic effects with backdrop blur for a modern feel
-- Smooth animations and transitions
-- Professional color-coded task status indicators
-- Eye-friendly contrast ratios for extended use
-- Voice-first interface design with clear visual feedback
-
-## Project Information
-
-### Project Structure
+## Project Structure
 
 ```
 parallax-voice-office/
-├── obp-GUI.py              # Main web interface with voice integration
-├── processor_config.yaml   # Global configuration for Parallax
-├── task_configs/           # Custom task workflow definitions
-├── gallery_template.html   # Template for the /gallery view
-├── install.py              # Interactive installer script
-├── mcp_config.json         # Model Context Protocol server configuration
-├── Dockerfile              # Docker container definition
-├── docker-compose.yml      # Docker orchestration file
-├── requirements.txt        # Python dependencies
-├── .env.example            # Template for API keys
-├── workspace/              # Default directory for file operations
-├── results/                # Output directory for completed task files
+├── obp-GUI.py              # Main web interface with voice
+├── processor_config.yaml   # Parallax configuration
+├── mcp_config.json         # Model Context Protocol servers
+├── task_configs/           # Task workflow definitions
+├── backup_manager.py       # Backup and recovery
+├── db_optimizer.py         # Database optimization
+├── config_validator.py     # Configuration validation
+├── setup_https.py          # HTTPS certificate setup
+├── install.py              # Interactive installer
+├── tests/                  # Test suite
+├── workspace/              # File operations workspace
+├── results/                # Completed task outputs
 └── data/                   # SQLite database storage
 ```
 
-### Technology Stack
+## Technology Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript with Web Speech API
 - **Backend**: Python 3.8+, Flask
 - **AI Engine**: Parallax SDK with qwen3:1b (or custom models)
-- **Database**: SQLite for task and result storage
-- **Tools**: Model Context Protocol (MCP) for extensibility
-- **Voice**: Web Speech API for recognition and synthesis
+- **Database**: SQLite
+- **Tools**: Model Context Protocol (MCP)
 
-### Recommended Models
+## Troubleshooting
 
-- **qwen3:1b**: Lightweight, fast, perfect for basic tasks (recommended)
-- **llama3.2:3b**: More capable, still runs well on modest hardware
-- **mistral:7b**: High quality for complex tasks, needs more resources
-- **Custom models**: Any Parallax-compatible model can be used
-
-## Contributing
-
-Pull requests are welcome! Please see CONTRIBUTING.md for guidelines.
-
-To set up a development environment:
-
+### Quick Diagnosis
 ```bash
-# Install development and testing tools
-pip install -r requirements-dev.txt
-
-# Run tests
-make test
-
-# Check code formatting
-make lint
+python config_validator.py
 ```
 
-## Roadmap
+### Common Issues
 
-**✅ Phase 1 - COMPLETED:**
-- [x] Web Speech API integration with real-time transcription
-- [x] Multi-language support (11 languages)
-- [x] Voice settings panel with customization
-- [x] Natural language processing for voice commands
-- [x] Text-to-speech feedback system
-- [x] Smart metadata extraction from voice
+**Parallax Connection:**
+- Verify Parallax is running: `parallax status`
+- Check model is loaded: `parallax models list`
+- Test connection: `parallax chat "Hello"`
 
-**✅ Phase 2 - COMPLETED:**
-- [x] Parallax SDK integration replacing Ollama
-- [x] Cluster status monitoring and health checks
-- [x] Cluster monitoring dashboard in GUI
-- [x] Configuration management for Parallax settings
-- [x] Automatic fallback to Ollama for backward compatibility
-- [x] Model configuration and display
+**Voice Issues:**
+- Use Chrome, Edge, or Safari (Firefox has limited support)
+- Check browser microphone permissions
+- For network access, HTTPS may be required
 
-**✅ Phase 3 - COMPLETED:**
-- [x] MCP (Model Context Protocol) framework setup
-- [x] File operations MCP server (15+ file management tools)
-- [x] Web search MCP server (Serper & Tavily API support)
-- [x] JSON/YAML parser and HTTP client MCP servers
-- [x] Task pipeline integration with MCP tools
-- [x] API endpoints for MCP server status and discovery
-
-**✅ Phase 4 - COMPLETED:**
-- [x] Enhanced Gallery View with pagination, filtering, and sorting
-- [x] Real-time processing updates via Server-Sent Events (SSE)
-- [x] Task management enhancements (priority, tags, dependencies)
-- [x] Task progress tracking (0-100% with current step display)
-- [x] Bulk operations (select multiple tasks, bulk delete/update)
-- [x] Task duplication functionality
-- [x] Enhanced metadata system with templates and validation
-- [x] Individual and bulk ZIP export capabilities
-- [x] Date range filtering for tasks
-- [x] Advanced search and filtering across all task attributes
-
-**🚧 In Progress:**
-- [ ] Phase 5: Production Readiness and Polish
-
-**📋 Planned Enhancements:**
-- [ ] Always-on voice activation with wake word (Phase 5)
-- [ ] Advanced UI components (drag-and-drop, autocomplete)
-- [ ] Mobile app for iOS/Android
-- [ ] Advanced cluster load balancing
-- [ ] Live log streaming
-- [ ] Task sharing and collaboration features
-- [ ] Integration with calendar/email tools
-- [ ] Plugin marketplace for custom MCP servers
-- [ ] HTTPS support for network voice access
-- [ ] Comprehensive testing suite and CI/CD pipeline
-
-See [TASKS.md](TASKS.md) for the complete implementation roadmap.
+**Network Access:**
+- Ensure devices are on same Wi-Fi
+- Allow port 5001 in firewall
+- Run `python network_test.py` for diagnostics
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+MIT License - See LICENSE file for details
 
 ## Learn More
 
-- [Parallax SDK Documentation](https://parallax.xyz/docs)
-- [Model Context Protocol](https://modelcontextprotocol.io)
 - [Voice Interface Guide](VOICE_GUIDE.md)
 - [How It Works](HOW-IT-WORKS.md)
 - [Metadata Guide](METADATA_GUIDE.md)
+- [Task Roadmap](TASKS.md)
+- [Parallax SDK Documentation](https://parallax.xyz/docs)
+- [Model Context Protocol](https://modelcontextprotocol.io)
 
 ---
 

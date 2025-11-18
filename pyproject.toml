@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "oss-batch-processor"
-version = "1.0.0"
-description = "An overnight AI assistant that processes tasks using local LLMs"
+name = "parallax-voice-office"
+version = "2.0.0"
+description = "Voice-enabled AI office assistant powered by Parallax distributed computing"
 readme = "README.md"
 authors = [
     {name = "Lalo Morales", email = "lalomorales22@gmail.com"}
@@ -25,7 +25,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-keywords = ["ollama", "llm", "batch-processing", "ai", "automation"]
+keywords = ["parallax", "llm", "voice-assistant", "distributed-computing", "ai", "mcp", "automation"]
 
 dependencies = [
     "requests>=2.31.0",
@@ -59,18 +59,18 @@ dev = [
 ]
 
 all = [
-    "oss-batch-processor[recommended,search,dev]",
+    "parallax-voice-office[recommended,search,dev]",
 ]
 
 [project.urls]
-Homepage = "https://github.com/lalomorales22/oss-batch-processor"
-Documentation = "https://github.com/lalomorales22/oss-batch-processor#readme"
-Repository = "https://github.com/lalomorales22/oss-batch-processor.git"
-Issues = "https://github.com/lalomorales22/oss-batch-processor/issues"
+Homepage = "https://github.com/lalomorales22/parallax-voice-office"
+Documentation = "https://github.com/lalomorales22/parallax-voice-office#readme"
+Repository = "https://github.com/lalomorales22/parallax-voice-office.git"
+Issues = "https://github.com/lalomorales22/parallax-voice-office/issues"
 
 [project.scripts]
-oss-gui = "oss_GUI:main"
-oss-cli = "oss_CLI:main"
+parallax-voice-gui = "obp_GUI:main"
+parallax-voice-cli = "obp_CLI:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
