@@ -85,7 +85,7 @@ HTML_TEMPLATE = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSS at Night - Overnight AI Assistant</title>
+    <title>Parallax Voice Office - AI Voice Assistant</title>
     <style>
         * {
             margin: 0;
@@ -620,13 +620,182 @@ HTML_TEMPLATE = '''
             max-height: 300px;
             overflow-y: auto;
         }
+
+        /* Voice Interface Styles */
+        .voice-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .mic-button {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .mic-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .mic-button.listening {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-color: #ef4444;
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        .mic-button.processing {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-color: #f59e0b;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
+            }
+        }
+
+        .voice-status {
+            flex: 1;
+            padding: 1rem;
+            background: rgba(23, 23, 23, 0.5);
+            border-radius: calc(var(--radius) - 2px);
+            border: 1px solid var(--border);
+        }
+
+        .voice-status-text {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+            margin-bottom: 0.5rem;
+        }
+
+        .voice-transcript {
+            font-size: 0.875rem;
+            color: var(--foreground);
+            min-height: 1.5rem;
+        }
+
+        .voice-settings-panel {
+            background: rgba(23, 23, 23, 0.7);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .voice-setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .voice-setting-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .voice-setting-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .voice-setting-description {
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+            margin-top: 0.25rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 3rem;
+            height: 1.5rem;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--secondary);
+            transition: 0.3s;
+            border-radius: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 1rem;
+            width: 1rem;
+            left: 0.25rem;
+            bottom: 0.2rem;
+            background-color: var(--muted-foreground);
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-color: #3b82f6;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(1.5rem);
+            background-color: white;
+        }
+
+        .permission-alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 1rem;
+            border-radius: calc(var(--radius) - 2px);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .compatibility-alert {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            color: #fbbf24;
+            padding: 1rem;
+            border-radius: calc(var(--radius) - 2px);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🌙 OSS at Night</h1>
-            <p class="subtitle">Queue tasks during the day, wake up to completed work • Accessible at {{ server_info }}</p>
+            <h1>🎙️ Parallax Voice Office</h1>
+            <p class="subtitle">Your voice-enabled AI assistant powered by distributed computing • Accessible at {{ server_info }}</p>
         </header>
         
         <div class="server-info">
@@ -662,20 +831,98 @@ HTML_TEMPLATE = '''
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Add New Task</h2>
-                    <p class="card-description">Queue a task for processing</p>
+                    <p class="card-description">Speak or type your task</p>
                 </div>
-                
+
+                <!-- Voice Controls -->
+                <div id="voice-compatibility-alert" class="compatibility-alert" style="display: none;">
+                    ⚠️ Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.
+                </div>
+
+                <div id="voice-permission-alert" class="permission-alert" style="display: none;">
+                    🎤 Microphone access denied. Please allow microphone permissions to use voice input.
+                </div>
+
+                <div class="voice-controls">
+                    <button class="mic-button" id="mic-button" onclick="toggleVoiceRecording()" title="Click to speak">
+                        <span id="mic-icon">🎤</span>
+                    </button>
+                    <div class="voice-status">
+                        <div class="voice-status-text" id="voice-status-text">Click the microphone to speak your task</div>
+                        <div class="voice-transcript" id="voice-transcript"></div>
+                    </div>
+                </div>
+
                 <form id="task-form">
                     <div class="form-group">
-                        <label for="command">Describe Your Task</label>
+                        <label for="command">Describe Your Task (Type or Speak)</label>
                         <textarea id="command" name="command" placeholder="Example: Research the latest AI developments and create a comprehensive report..." style="min-height: 120px;" required></textarea>
                     </div>
-                    
+
                     <div class="button-group">
                         <button type="button" class="button button-primary" onclick="interpretTask()">Interpret Task</button>
                         <button type="button" class="button button-secondary" onclick="clearAll()">Clear</button>
+                        <button type="button" class="button button-ghost" onclick="toggleVoiceSettings()">⚙️ Voice Settings</button>
                     </div>
                 </form>
+
+                <!-- Voice Settings Panel -->
+                <div id="voice-settings-panel" class="voice-settings-panel" style="display: none; margin-top: 1rem;">
+                    <h3 style="margin-bottom: 1rem;">Voice Settings</h3>
+
+                    <div class="voice-setting-row">
+                        <div>
+                            <div class="voice-setting-label">Voice Feedback</div>
+                            <div class="voice-setting-description">Hear spoken confirmations and responses</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="voice-feedback-toggle" onchange="saveVoiceSettings()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="voice-setting-row">
+                        <div>
+                            <div class="voice-setting-label">Auto-detect Task Type</div>
+                            <div class="voice-setting-description">Automatically determine task type from speech</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto-detect-toggle" checked onchange="saveVoiceSettings()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="voice-setting-row">
+                        <div>
+                            <div class="voice-setting-label">Continuous Listening</div>
+                            <div class="voice-setting-description">Keep listening until you click stop</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="continuous-mode-toggle" onchange="saveVoiceSettings()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="voice-setting-row">
+                        <div>
+                            <div class="voice-setting-label">Language</div>
+                            <div class="voice-setting-description">Select your preferred language</div>
+                        </div>
+                        <select id="voice-language-select" onchange="saveVoiceSettings()" style="width: 200px; padding: 0.5rem; border-radius: 0.25rem; background: var(--input); color: var(--foreground); border: 1px solid var(--border);">
+                            <option value="en-US">English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="es-ES">Spanish (Spain)</option>
+                            <option value="es-MX">Spanish (Mexico)</option>
+                            <option value="fr-FR">French</option>
+                            <option value="de-DE">German</option>
+                            <option value="it-IT">Italian</option>
+                            <option value="pt-BR">Portuguese (Brazil)</option>
+                            <option value="ja-JP">Japanese</option>
+                            <option value="zh-CN">Chinese (Simplified)</option>
+                            <option value="ko-KR">Korean</option>
+                        </select>
+                    </div>
+                </div>
                 
                 <div id="confirmation-area" style="display: none; margin-top: 2rem; padding: 1.5rem; background: var(--secondary); border-radius: var(--radius);">
                     <h3 style="margin-bottom: 1rem;">Task Interpretation</h3>
@@ -772,39 +1019,285 @@ HTML_TEMPLATE = '''
         let processingInterval = null;
         let refreshInterval = null;
         let interpretedTask = null;
+
+        // Voice Recognition Variables
+        let recognition = null;
+        let isListening = false;
+        let voiceSettings = {
+            voiceFeedback: false,
+            autoDetect: true,
+            continuousMode: false,
+            language: 'en-US'
+        };
+        let speechSynthesis = window.speechSynthesis;
+        let voiceTimeout = null;
+
+        // Initialize Voice Recognition
+        function initVoiceRecognition() {
+            // Check browser compatibility
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                document.getElementById('voice-compatibility-alert').style.display = 'block';
+                document.getElementById('mic-button').disabled = true;
+                document.getElementById('mic-button').style.opacity = '0.5';
+                document.getElementById('mic-button').style.cursor = 'not-allowed';
+                return false;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = voiceSettings.continuousMode;
+            recognition.interimResults = true;
+            recognition.lang = voiceSettings.language;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                isListening = true;
+                updateVoiceUI('listening');
+                document.getElementById('voice-status-text').textContent = 'Listening... Speak now';
+
+                // Set timeout for auto-stop (30 seconds)
+                voiceTimeout = setTimeout(() => {
+                    if (isListening) {
+                        stopVoiceRecording();
+                        speakFeedback('Voice input timed out');
+                    }
+                }, 30000);
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update live transcript display
+                document.getElementById('voice-transcript').innerHTML =
+                    '<span style="color: #10b981;">' + finalTranscript + '</span>' +
+                    '<span style="color: #6b7280;">' + interimTranscript + '</span>';
+
+                // Update the textarea with final transcript
+                if (finalTranscript) {
+                    const currentText = document.getElementById('command').value;
+                    document.getElementById('command').value = currentText + finalTranscript;
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+
+                if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+                    document.getElementById('voice-permission-alert').style.display = 'block';
+                    speakFeedback('Microphone permission denied');
+                } else if (event.error === 'no-speech') {
+                    speakFeedback('No speech detected. Please try again.');
+                } else if (event.error === 'network') {
+                    speakFeedback('Network error. Please check your connection.');
+                } else {
+                    speakFeedback('Voice recognition error: ' + event.error);
+                }
+
+                stopVoiceRecording();
+            };
+
+            recognition.onend = function() {
+                if (voiceSettings.continuousMode && isListening) {
+                    // Restart if in continuous mode
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('Failed to restart recognition:', e);
+                        stopVoiceRecording();
+                    }
+                } else {
+                    stopVoiceRecording();
+                }
+            };
+
+            return true;
+        }
+
+        function toggleVoiceRecording() {
+            if (isListening) {
+                stopVoiceRecording();
+            } else {
+                startVoiceRecording();
+            }
+        }
+
+        function startVoiceRecording() {
+            if (!recognition) {
+                if (!initVoiceRecognition()) {
+                    return;
+                }
+            }
+
+            try {
+                recognition.lang = voiceSettings.language;
+                recognition.continuous = voiceSettings.continuousMode;
+                recognition.start();
+                speakFeedback('Listening');
+            } catch (e) {
+                console.error('Failed to start recognition:', e);
+                speakFeedback('Failed to start voice recognition');
+            }
+        }
+
+        function stopVoiceRecording() {
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+
+            isListening = false;
+            updateVoiceUI('idle');
+            document.getElementById('voice-status-text').textContent = 'Click the microphone to speak your task';
+
+            if (voiceTimeout) {
+                clearTimeout(voiceTimeout);
+                voiceTimeout = null;
+            }
+
+            // If there's text, offer to interpret it
+            const commandText = document.getElementById('command').value.trim();
+            if (commandText && voiceSettings.autoDetect) {
+                setTimeout(() => {
+                    speakFeedback('Task captured. Click interpret to process.');
+                }, 500);
+            }
+        }
+
+        function updateVoiceUI(state) {
+            const micButton = document.getElementById('mic-button');
+            const micIcon = document.getElementById('mic-icon');
+
+            micButton.classList.remove('listening', 'processing');
+
+            if (state === 'listening') {
+                micButton.classList.add('listening');
+                micIcon.textContent = '⏸️';
+            } else if (state === 'processing') {
+                micButton.classList.add('processing');
+                micIcon.textContent = '⏳';
+            } else {
+                micIcon.textContent = '🎤';
+            }
+        }
+
+        function speakFeedback(text) {
+            if (!voiceSettings.voiceFeedback || !speechSynthesis) {
+                return;
+            }
+
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 0.8;
+
+            // Try to use a voice matching the selected language
+            const voices = speechSynthesis.getVoices();
+            const langPrefix = voiceSettings.language.substring(0, 2);
+            const matchingVoice = voices.find(voice => voice.lang.startsWith(langPrefix));
+            if (matchingVoice) {
+                utterance.voice = matchingVoice;
+            }
+
+            speechSynthesis.speak(utterance);
+        }
+
+        function toggleVoiceSettings() {
+            const panel = document.getElementById('voice-settings-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function saveVoiceSettings() {
+            voiceSettings.voiceFeedback = document.getElementById('voice-feedback-toggle').checked;
+            voiceSettings.autoDetect = document.getElementById('auto-detect-toggle').checked;
+            voiceSettings.continuousMode = document.getElementById('continuous-mode-toggle').checked;
+            voiceSettings.language = document.getElementById('voice-language-select').value;
+
+            // Save to localStorage
+            localStorage.setItem('voiceSettings', JSON.stringify(voiceSettings));
+
+            // Update recognition if active
+            if (recognition) {
+                recognition.lang = voiceSettings.language;
+                recognition.continuous = voiceSettings.continuousMode;
+            }
+
+            speakFeedback('Settings saved');
+        }
+
+        function loadVoiceSettings() {
+            const saved = localStorage.getItem('voiceSettings');
+            if (saved) {
+                voiceSettings = JSON.parse(saved);
+
+                document.getElementById('voice-feedback-toggle').checked = voiceSettings.voiceFeedback;
+                document.getElementById('auto-detect-toggle').checked = voiceSettings.autoDetect;
+                document.getElementById('continuous-mode-toggle').checked = voiceSettings.continuousMode;
+                document.getElementById('voice-language-select').value = voiceSettings.language;
+            }
+        }
+
+        // Load voices when available
+        if (speechSynthesis) {
+            speechSynthesis.onvoiceschanged = function() {
+                speechSynthesis.getVoices();
+            };
+        }
+
         
         async function interpretTask() {
             const command = document.getElementById('command').value.trim();
             if (!command) {
                 showToast('Please enter a task description', 'error');
+                speakFeedback('Please enter a task description');
                 return;
             }
-            
+
+            // Update voice UI to show processing
+            updateVoiceUI('processing');
+            speakFeedback('Interpreting your task');
+
             // Show loading state
             const button = event.target;
             const originalText = button.textContent;
             button.disabled = true;
             button.textContent = 'Interpreting...';
-            
+
             try {
                 const response = await fetch('/api/interpret_task', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({command: command})
+                    body: JSON.stringify({command: command, voice_input: true})
                 });
-                
+
                 if (response.ok) {
                     interpretedTask = await response.json();
                     displayInterpretation(interpretedTask);
+                    speakFeedback('Task interpreted as ' + interpretedTask.type);
                 } else {
                     const error = await response.json();
                     showToast('Failed to interpret task: ' + (error.error || 'Unknown error'), 'error');
+                    speakFeedback('Failed to interpret task');
                 }
             } catch (error) {
                 showToast('Error: ' + error.message, 'error');
+                speakFeedback('Error interpreting task');
             } finally {
                 button.disabled = false;
                 button.textContent = originalText;
+                updateVoiceUI('idle');
             }
         }
         
@@ -835,27 +1328,31 @@ HTML_TEMPLATE = '''
         async function confirmAndQueue() {
             if (!interpretedTask) {
                 showToast('No task to queue', 'error');
+                speakFeedback('No task to queue');
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/add_task', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(interpretedTask)
                 });
-                
+
                 if (response.ok) {
                     const result = await response.json();
                     showToast(`Task queued: ${result.task_id}`);
+                    speakFeedback('Task queued successfully');
                     clearAll();
                     updateStatus();
                     loadTasks();
                 } else {
                     showToast('Failed to queue task', 'error');
+                    speakFeedback('Failed to queue task');
                 }
             } catch (error) {
                 showToast('Error: ' + error.message, 'error');
+                speakFeedback('Error queuing task');
             }
         }
         
@@ -884,16 +1381,18 @@ HTML_TEMPLATE = '''
             const processBtn = document.getElementById('process-btn');
             processBtn.disabled = true;
             processBtn.innerHTML = 'Processing... <span class="loader" style="display: inline-block;"></span>';
-            
+
             try {
                 const response = await fetch('/api/start_processing', {method: 'POST'});
                 if (response.ok) {
                     showToast('Processing started');
+                    speakFeedback('Processing started');
                     processingInterval = setInterval(updateStatus, 2000);
                     processBtn.classList.add('processing');
                 }
             } catch (error) {
                 showToast('Error starting processing', 'error');
+                speakFeedback('Error starting processing');
                 processBtn.innerHTML = 'Start Processing';
                 processBtn.disabled = false;
             }
@@ -1422,11 +1921,15 @@ HTML_TEMPLATE = '''
         
         // Form submission
         document.getElementById('task-form').addEventListener('submit', submitTask);
-        
+
         // Initial load
         updateStatus();
         loadTasks();
-        
+
+        // Initialize voice recognition
+        loadVoiceSettings();
+        initVoiceRecognition();
+
         // Start auto-refresh
         refreshInterval = setInterval(() => {
             updateStatus();
@@ -1439,43 +1942,63 @@ HTML_TEMPLATE = '''
 
 def create_ai_router_prompt():
     """Create a system prompt for the AI to interpret user commands into task JSON"""
-    return """You are a Task Interpreter for a batch processing system. Your role is to analyze user commands and convert them into structured task JSON objects.
+    return """You are a Task Interpreter for Parallax Voice Office, a voice-first AI assistant. Your role is to analyze user commands (spoken or typed) and convert them into structured task JSON objects.
 
-Based on the user's input, determine the appropriate task type and extract relevant metadata.
+Based on the user's input, determine the appropriate task type and extract relevant metadata from natural language.
 
 Task Types:
-- search: For research, web searches, information gathering
-- process: For text processing, formatting, improving existing content
-- create: For generating new content from scratch
-- code: For programming, script generation, code analysis
-- chain: For multi-step complex tasks
+- search: For research, web searches, information gathering, finding information
+- process: For text processing, formatting, improving, summarizing, or transforming existing content
+- create: For generating new content from scratch (articles, documents, creative writing)
+- code: For programming, script generation, code analysis, debugging
+- chain: For multi-step complex tasks with dependencies
 
-Use the following metadata guidelines:
+Voice Command Detection Patterns:
+- "search for...", "research...", "find information about..." → search
+- "create...", "write...", "generate...", "compose..." → create
+- "process...", "improve...", "summarize...", "rephrase...", "make it more..." → process
+- "write code...", "create a script...", "debug...", "implement..." → code
+
+Metadata Extraction from Natural Language:
 
 For SEARCH tasks:
 - search_query: The main search topic
-- comparison: true if comparing multiple things
-- filename: Output filename (default: research_report.md)
+- comparison: true if comparing multiple things (e.g., "compare X and Y")
+- filename: Extract from "save to X.md" or "output as X" (default: research_report.md)
 
 For PROCESS tasks:
-- format: Output format (bullet_points, markdown, json)
-- improve_clarity: true to enhance clarity
-- simplify: true to simplify content
+- format: Detect format requests (bullet_points, markdown, json, csv, table)
+- improve_clarity: true if "clearer", "more clear", "easier to understand"
+- simplify: true if "simpler", "simplify", "make it simple"
+- tone: Extract tone words (professional, casual, friendly, formal, technical)
 
 For CREATE tasks:
-- tone: Writing tone (professional, casual, conversational)
-- audience: Target audience
-- format: Output format
-- filename: Output filename
+- tone: Detect tone (professional, casual, conversational, friendly, formal, technical)
+- audience: Extract audience (executives, developers, beginners, experts, general public, students)
+- format: Detect format (essay, bullet_points, article, blog_post, report, email, letter)
+- filename: Extract from "save to X" or "output as X" or "call it X"
 
 For CODE tasks:
-- language: Programming language (python, javascript, etc)
-- filename: Output filename with appropriate extension
-- include_docs: true to include documentation
-- include_tests: true to include tests
+- language: Detect programming language (python, javascript, java, c++, rust, go, typescript, etc.)
+- filename: Extract from "save to X.py" or use language extension
+- include_docs: true if "with documentation", "include comments", "add docstrings"
+- include_tests: true if "with tests", "include test cases", "add unit tests"
 
 For CHAIN tasks:
+- steps: Try to identify distinct steps if mentioned
 - Include relevant metadata for the overall workflow
+
+Filename Detection Examples:
+- "save to report.md" → filename: "report.md"
+- "call it analysis.py" → filename: "analysis.py"
+- "output as summary.txt" → filename: "summary.txt"
+- No filename mentioned → Use appropriate default
+
+Tone Detection Keywords:
+- professional, formal, business → "professional"
+- casual, friendly, relaxed → "casual"
+- conversational, chatty → "conversational"
+- technical, detailed → "technical"
 
 IMPORTANT: Return ONLY a clean JSON object with this structure:
 {
@@ -1483,6 +2006,41 @@ IMPORTANT: Return ONLY a clean JSON object with this structure:
   "content": "the user's request clearly stated",
   "metadata": {
     "key": "value"
+  }
+}
+
+Examples:
+
+User: "Search for the latest AI safety research and save to ai_safety.md"
+{
+  "type": "search",
+  "content": "Search for the latest AI safety research",
+  "metadata": {
+    "search_query": "AI safety research",
+    "filename": "ai_safety.md"
+  }
+}
+
+User: "Create a professional email to executives about the project deadline"
+{
+  "type": "create",
+  "content": "Create a professional email to executives about the project deadline",
+  "metadata": {
+    "tone": "professional",
+    "audience": "executives",
+    "format": "email"
+  }
+}
+
+User: "Write a Python script to analyze CSV files with documentation and tests"
+{
+  "type": "code",
+  "content": "Write a Python script to analyze CSV files",
+  "metadata": {
+    "language": "python",
+    "include_docs": true,
+    "include_tests": true,
+    "filename": "analyzer.py"
   }
 }
 
