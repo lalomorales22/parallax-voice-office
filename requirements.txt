@@ -5,7 +5,10 @@
 # CORE DEPENDENCIES (Required for both versions)
 # ==========================================
 
-# HTTP requests to Ollama API
+# Parallax SDK for distributed AI processing
+parallax-sdk>=0.1.0
+
+# HTTP requests
 requests>=2.31.0
 
 # YAML configuration file parsing
