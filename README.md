@@ -1,7 +1,6 @@
 # Parallax Voice Office
 
-<img width="1185" height="1037" alt="Screenshot 2025-08-18 at 12 01 57 AM" src="https://github.com/user-attachments/assets/b768c716-bd5f-406b-b528-20aecb3a3dfb" />
-<img width="1791" height="1188" alt="Screenshot 2025-08-18 at 12 02 06 AM" src="https://github.com/user-attachments/assets/33fd47b5-855e-4de6-89ac-4882329cd73d" />
+
 
 **Your intelligent voice-enabled task management assistant powered by distributed computing.**
 
