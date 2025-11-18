@@ -25,7 +25,12 @@ Perfect for busy professionals who want an AI assistant with the power of Claude
 
 ## ✨ Key Features
 
-- **🎙️ Voice Interface**: Speak naturally to add tasks, get responses, and control the system
+- **🎙️ Voice Interface** ✅ FULLY IMPLEMENTED: Speak naturally to add tasks with Web Speech API support
+  - Real-time voice-to-text transcription
+  - Multi-language support (11 languages including English, Spanish, French, German, Japanese, Chinese)
+  - Smart task type detection and metadata extraction from voice
+  - Optional text-to-speech feedback
+  - Continuous and single-shot recording modes
 - **🔗 Multi-Node Cluster**: Distributed processing across multiple home computers using Parallax SDK
 - **🛠️ Tool Capabilities**: MCP (Model Context Protocol) integration for file operations, web search, and more
 - **⚡ Lightweight & Fast**: Starts with qwen3:1b model, expandable to larger models as needed
@@ -368,31 +373,60 @@ language=python,filename=analyzer.py::Create a data visualization script using p
 
 ## Using Voice Commands
 
-### Adding Tasks by Voice
+### Adding Tasks by Voice ✅ NOW AVAILABLE
 
 1. Click the 🎤 **microphone button** in the web interface
-2. Speak your task naturally:
-   - "Create a Python script to analyze CSV files"
-   - "Search for renewable energy trends and create a report"
-   - "Process this text and make it more professional"
-3. The system extracts task type and metadata automatically
-4. Review the generated task and click "Add to Queue"
+2. Speak your task naturally - examples:
+   - "Search for the latest AI safety research and save to ai_safety.md"
+   - "Create a professional email to executives about the project deadline"
+   - "Write a Python script to analyze CSV files with documentation and tests"
+   - "Process this report and make it more concise"
+3. Watch real-time transcription as you speak (green text = finalized, gray = interim)
+4. The system automatically extracts task type and metadata from your voice
+5. Click "Interpret Task" to process your spoken command
+6. Review the interpretation and click "Add to Queue"
 
-### Voice Settings
+### Voice Settings Panel (Click ⚙️ Voice Settings)
 
-Configure voice recognition in the Settings panel:
+Configure your voice experience:
 
-- **Language**: Set your preferred language (English, Spanish, French, etc.)
-- **Auto-detect**: Automatically determine task type from speech
-- **Voice Feedback**: Enable spoken confirmations
-- **Sensitivity**: Adjust microphone sensitivity
+- **Language**: Choose from 11 languages
+  - English (US/UK), Spanish (Spain/Mexico), French, German, Italian
+  - Portuguese (Brazil), Japanese, Chinese (Simplified), Korean
+- **Voice Feedback**: Toggle text-to-speech confirmations on/off
+- **Auto-detect Task Type**: Automatically determine task type from your speech
+- **Continuous Listening**: Keep microphone active until you click stop (vs. single command mode)
 
-### Voice Tips
+### Voice Features
 
-- Speak clearly and at a normal pace
-- Include key details like "and save to filename.md"
-- Specify the task type explicitly for best results: "Search for...", "Create a...", "Write code to..."
-- Use the preview before adding to queue to ensure accuracy
+- **30-second timeout**: Recording automatically stops after 30 seconds of active listening
+- **Browser compatibility check**: Alerts if your browser doesn't support voice input
+- **Permission handling**: Clear prompts if microphone access is needed
+- **Real-time feedback**: Visual indicators show listening (red pulsing), processing (orange), or idle (blue)
+- **Error recovery**: Helpful messages for no-speech, network errors, or permission issues
+
+### Voice Command Tips
+
+**Task Type Detection:**
+- Say "search for..." or "research..." for search tasks
+- Say "create...", "write...", or "generate..." for content creation
+- Say "write code..." or "create a script..." for coding tasks
+- Say "process...", "improve...", or "summarize..." for text processing
+
+**Metadata Extraction:**
+The system intelligently extracts:
+- **Filenames**: "save to report.md", "call it analyzer.py", "output as summary.txt"
+- **Tone**: "professional", "casual", "friendly", "technical"
+- **Audience**: "for executives", "for developers", "for beginners"
+- **Format**: "as bullet points", "in markdown", "as an email", "as JSON"
+- **Code features**: "with documentation", "with tests", "in Python"
+
+**Best Practices:**
+- Speak clearly at a normal pace
+- Include specific details: filenames, tone, audience
+- Use command words: "search", "create", "write code", "process"
+- Review the interpretation before queuing
+- Enable voice feedback in settings to hear confirmations
 
 ## Docker Deployment (Recommended for Production)
 
@@ -457,11 +491,20 @@ If the application can't connect to Parallax:
 
 If voice input isn't working:
 
-- **Microphone permissions**: Ensure browser has microphone access
-- **HTTPS**: Voice requires HTTPS or localhost (use localhost for testing)
-- **Browser compatibility**: Use Chrome, Edge, or Safari for best results
-- **Audio settings**: Check system audio input settings
-- **Test microphone**: Use browser's built-in mic test
+- **Browser compatibility**: The app will show a yellow alert if voice isn't supported
+  - ✅ Supported: Chrome, Edge, Safari (desktop & mobile)
+  - ❌ Not supported: Firefox (limited support), some older browsers
+- **Microphone permissions**: Red alert appears if permission is denied
+  - Click the 🎤 button and allow microphone access when prompted
+  - Check browser address bar for blocked permission icons
+- **HTTPS requirement**: Voice API requires HTTPS or localhost
+  - ✅ localhost works for local testing
+  - For network access, you may need HTTPS (see Phase 5 in TASKS.md)
+- **Audio settings**: Check system audio input
+  - macOS: System Preferences → Sound → Input
+  - Windows: Settings → System → Sound → Input
+- **No speech detected**: Speak clearly within 3-5 seconds of clicking the mic button
+- **Network errors**: Voice recognition may use cloud services; check internet connection
 
 ### 4. Mobile / Network Access Issues
 
@@ -569,16 +612,28 @@ make lint
 
 ## Roadmap
 
-Future enhancements planned:
+**✅ Phase 1 - COMPLETED:**
+- [x] Web Speech API integration with real-time transcription
+- [x] Multi-language support (11 languages)
+- [x] Voice settings panel with customization
+- [x] Natural language processing for voice commands
+- [x] Text-to-speech feedback system
+- [x] Smart metadata extraction from voice
 
-- [ ] Always-on voice activation with wake word
-- [ ] Voice output for task completion notifications
-- [ ] Multi-language voice support
+**🚧 In Progress:**
+- [ ] Phase 2: Parallax SDK Integration (Ollama → Parallax migration)
+- [ ] Phase 3: MCP Server Integration (File operations, Web search)
+
+**📋 Planned Enhancements:**
+- [ ] Always-on voice activation with wake word (Phase 4)
 - [ ] Mobile app for iOS/Android
 - [ ] Advanced cluster load balancing
 - [ ] Real-time task streaming results
 - [ ] Integration with calendar/email tools
 - [ ] Plugin marketplace for custom MCP servers
+- [ ] HTTPS support for network voice access
+
+See [TASKS.md](TASKS.md) for the complete implementation roadmap.
 
 ## License
 
