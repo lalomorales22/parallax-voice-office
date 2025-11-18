@@ -2180,6 +2180,10 @@ class TaskProcessor:
         }
         self.init_parallax()
 
+        # Initialize MCP (Model Context Protocol) Manager
+        self.mcp_manager = None
+        self.init_mcp()
+
         self.init_database()
         self.load_queue()
 
@@ -2269,6 +2273,32 @@ class TaskProcessor:
         except Exception as e:
             logger.error(f"Cluster health check failed: {e}")
             self.cluster_health['connected'] = False
+
+    def init_mcp(self):
+        """Initialize Model Context Protocol (MCP) Manager"""
+        try:
+            from mcp_manager import MCPManager
+
+            logger.info("Initializing MCP (Model Context Protocol) Manager...")
+            self.mcp_manager = MCPManager(config_path="mcp_config.json")
+
+            # Get status of initialized servers
+            server_status = self.mcp_manager.get_server_status()
+            enabled_servers = [name for name, info in server_status.items() if info['status'] == 'running']
+
+            if enabled_servers:
+                logger.info(f"✅ MCP initialized successfully with {len(enabled_servers)} servers: {', '.join(enabled_servers)}")
+            else:
+                logger.warning("⚠️  MCP initialized but no servers are running")
+
+        except ImportError as e:
+            logger.warning(f"MCP modules not available: {e}")
+            logger.warning("Task processing will continue without MCP tool support")
+            self.mcp_manager = None
+        except Exception as e:
+            logger.error(f"Failed to initialize MCP: {e}")
+            logger.warning("Task processing will continue without MCP tool support")
+            self.mcp_manager = None
 
     def get_cluster_status(self):
         """Get current cluster status for API endpoint"""
@@ -2429,50 +2459,206 @@ class TaskProcessor:
     def process_with_ollama(self, prompt: str) -> str:
         """Backward compatibility alias - redirects to process_with_parallax"""
         return self.process_with_parallax(prompt)
-    
+
+    def load_task_config(self, task_type: str) -> Optional[Dict[str, Any]]:
+        """Load task configuration from YAML file"""
+        config_file = Path("task_configs") / f"{task_type}_tasks.yaml"
+
+        if not config_file.exists():
+            logger.warning(f"Task config file not found: {config_file}")
+            return None
+
+        try:
+            with open(config_file, 'r') as f:
+                config = yaml.safe_load(f)
+            return config
+        except Exception as e:
+            logger.error(f"Failed to load task config: {e}")
+            return None
+
+    def execute_task_pipeline(self, task: Task, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute task using pipeline steps from config"""
+        results = {}
+        context = {
+            'task_id': task.id,
+            'task_type': task.type.value,
+            'task_content': task.content,
+            'metadata': task.metadata
+        }
+
+        steps = config.get('steps', [])
+
+        for step in steps:
+            step_name = step.get('name', 'unnamed_step')
+            logger.info(f"Executing step: {step_name}")
+
+            try:
+                # Check if this step uses a plugin (MCP tool)
+                if 'plugin' in step:
+                    plugin_name = step['plugin']
+                    result = self.execute_mcp_plugin(plugin_name, step, task, context)
+                    results[step_name] = result
+                    context[step_name] = result
+
+                # Otherwise, execute as prompt-based step
+                elif 'prompt' in step and step['prompt']:
+                    prompt_template = step['prompt']
+
+                    # Replace placeholders in prompt with previous results
+                    prompt = prompt_template
+                    for key, value in context.items():
+                        placeholder = f"{{{key}}}"
+                        if placeholder in prompt:
+                            # Convert value to string for replacement
+                            if isinstance(value, dict):
+                                value_str = json.dumps(value, indent=2)
+                            else:
+                                value_str = str(value)
+                            prompt = prompt.replace(placeholder, value_str)
+
+                    # Process with Parallax
+                    response = self.process_with_parallax(prompt)
+                    results[step_name] = response
+                    context[step_name] = response
+
+                else:
+                    logger.warning(f"Step '{step_name}' has no plugin or prompt configured")
+
+            except Exception as e:
+                logger.error(f"Error in step '{step_name}': {e}")
+                results[step_name] = f"Error: {str(e)}"
+
+        return results
+
+    def execute_mcp_plugin(self, plugin_name: str, step: Dict[str, Any],
+                          task: Task, context: Dict[str, Any]) -> Any:
+        """Execute an MCP plugin/tool"""
+        if not self.mcp_manager:
+            logger.warning("MCP not available, skipping plugin step")
+            return {"error": "MCP not initialized"}
+
+        # Map plugin names to MCP servers and tools
+        plugin_map = {
+            'file_operations': ('file-operations', 'create_file'),
+            'web_search': ('web-search', 'search'),
+        }
+
+        if plugin_name not in plugin_map:
+            logger.warning(f"Unknown plugin: {plugin_name}")
+            return {"error": f"Unknown plugin: {plugin_name}"}
+
+        server_name, default_tool = plugin_map[plugin_name]
+
+        # Get operation/tool name from step config
+        operation = step.get('operation', default_tool)
+
+        # Prepare parameters
+        parameters = {}
+
+        if plugin_name == 'file_operations':
+            # File operations
+            if operation == 'create':
+                # Get content from previous steps or task results
+                content_sources = [
+                    context.get('create_report'),
+                    context.get('summarize'),
+                    context.get('final_output'),
+                    task.content
+                ]
+                content = next((c for c in content_sources if c), '')
+
+                # Get filename
+                filename = step.get('filename_template', task.metadata.get('filename', f'{task.id}.md'))
+                filename = filename.replace('{task_id}', task.id)
+
+                parameters = {
+                    'filename': filename,
+                    'content': content,
+                    'overwrite': True
+                }
+                operation = 'create_file'
+
+        elif plugin_name == 'web_search':
+            # Web search
+            search_query = task.metadata.get('search_query', task.content)
+            parameters = {
+                'query': search_query,
+                'num_results': task.metadata.get('max_results', 10)
+            }
+            operation = 'search'
+
+        # Execute the MCP tool
+        try:
+            result = self.mcp_manager.execute_tool(server_name, operation, parameters)
+            return result
+        except Exception as e:
+            logger.error(f"MCP plugin execution error: {e}")
+            return {"error": str(e)}
+
     def process_task(self, task: Task):
         task.status = TaskStatus.PROCESSING
         task.updated_at = datetime.now().isoformat()
         start_time = time.time()
-        
+
         try:
-            # Simple processing based on task type
-            if task.type == TaskType.SEARCH:
-                # Simulate web search
-                task.results['search'] = f"Search results for: {task.content[:50]}"
-                prompt = f"Summarize this search query and create a report: {task.content}"
-                task.results['report'] = self.process_with_ollama(prompt)
-                
-            elif task.type == TaskType.PROCESS:
-                prompt = f"Process and improve this content: {task.content}"
-                task.results['processed'] = self.process_with_ollama(prompt)
-                
-            elif task.type == TaskType.CREATE:
-                prompt = f"Create content based on: {task.content}"
-                task.results['created'] = self.process_with_ollama(prompt)
-                
-            elif task.type == TaskType.CODE:
-                prompt = f"Write code for: {task.content}"
-                task.results['code'] = self.process_with_ollama(prompt)
-                
-            elif task.type == TaskType.CHAIN:
-                # Multi-step processing
-                steps = ["analyze", "expand", "finalize"]
-                for step in steps:
-                    prompt = f"{step.capitalize()} this: {task.content}"
-                    task.results[step] = self.process_with_ollama(prompt)
-            
+            # Try to load YAML task configuration first
+            task_config = self.load_task_config(task.type.value)
+
+            if task_config:
+                # Execute using pipeline-based approach with MCP support
+                logger.info(f"Processing task '{task.id}' using YAML config pipeline")
+                task.results = self.execute_task_pipeline(task, task_config)
+            else:
+                # Fallback to simple processing based on task type
+                logger.info(f"Processing task '{task.id}' using fallback method (no YAML config)")
+
+                if task.type == TaskType.SEARCH:
+                    # Use MCP web search if available
+                    if self.mcp_manager:
+                        search_result = self.mcp_manager.execute_tool(
+                            'web-search', 'search',
+                            {'query': task.metadata.get('search_query', task.content), 'num_results': 10}
+                        )
+                        task.results['web_search'] = search_result
+                    else:
+                        # Simulate web search
+                        task.results['search'] = f"Search results for: {task.content[:50]}"
+
+                    prompt = f"Summarize this search query and create a report: {task.content}"
+                    task.results['report'] = self.process_with_ollama(prompt)
+
+                elif task.type == TaskType.PROCESS:
+                    prompt = f"Process and improve this content: {task.content}"
+                    task.results['processed'] = self.process_with_ollama(prompt)
+
+                elif task.type == TaskType.CREATE:
+                    prompt = f"Create content based on: {task.content}"
+                    task.results['created'] = self.process_with_ollama(prompt)
+
+                elif task.type == TaskType.CODE:
+                    prompt = f"Write code for: {task.content}"
+                    task.results['code'] = self.process_with_ollama(prompt)
+
+                elif task.type == TaskType.CHAIN:
+                    # Multi-step processing
+                    steps = ["analyze", "expand", "finalize"]
+                    for step in steps:
+                        prompt = f"{step.capitalize()} this: {task.content}"
+                        task.results[step] = self.process_with_ollama(prompt)
+
             # Save content to file if filename is specified in metadata
             self._save_results_to_file(task)
-            
+
             task.status = TaskStatus.COMPLETED
             task.processing_time = time.time() - start_time
-            
+
         except Exception as e:
+            logger.error(f"Task processing error: {e}")
+            logger.error(traceback.format_exc())
             task.status = TaskStatus.FAILED
             task.error = str(e)
             task.retry_count += 1
-        
+
         task.updated_at = datetime.now().isoformat()
         self.save_to_db(task)
         self.save_queue()
@@ -2812,6 +2998,33 @@ def refresh_cluster():
     processor.check_cluster_health()
     status = processor.get_cluster_status()
     return jsonify(status)
+
+@app.route('/api/mcp/status')
+def mcp_status():
+    """Get MCP (Model Context Protocol) server status"""
+    if not processor.mcp_manager:
+        return jsonify({
+            'enabled': False,
+            'message': 'MCP not initialized'
+        })
+
+    status = processor.mcp_manager.get_server_status()
+    available_tools = processor.mcp_manager.get_available_tools()
+
+    return jsonify({
+        'enabled': True,
+        'servers': status,
+        'available_tools': available_tools
+    })
+
+@app.route('/api/mcp/tools')
+def mcp_tools():
+    """Get available MCP tools"""
+    if not processor.mcp_manager:
+        return jsonify({'error': 'MCP not initialized'}), 503
+
+    tools = processor.mcp_manager.get_available_tools()
+    return jsonify(tools)
 
 @app.route('/api/delete_task/<task_id>', methods=['DELETE'])
 def delete_task(task_id):

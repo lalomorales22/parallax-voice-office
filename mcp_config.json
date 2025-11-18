@@ -1,0 +1,71 @@
+{
+  "description": "Model Context Protocol (MCP) Server Configuration for Parallax Voice Office",
+  "version": "1.0.0",
+  "mcpServers": {
+    "file-operations": {
+      "enabled": true,
+      "type": "internal",
+      "description": "File CRUD operations with full read/write/search capabilities",
+      "workspace": "./workspace",
+      "allowed_operations": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "list",
+        "search",
+        "copy",
+        "move",
+        "rename",
+        "mkdir",
+        "rmdir",
+        "exists",
+        "info",
+        "append",
+        "backup"
+      ],
+      "max_file_size_mb": 10,
+      "allowed_extensions": ["*"]
+    },
+    "web-search": {
+      "enabled": true,
+      "type": "internal",
+      "description": "Web search integration using Serper or Tavily API",
+      "provider": "auto",
+      "serper_api_key_env": "SERPER_API_KEY",
+      "tavily_api_key_env": "TAVILY_API_KEY",
+      "max_results": 10,
+      "cache_enabled": true,
+      "cache_ttl_seconds": 3600
+    },
+    "code-execution": {
+      "enabled": false,
+      "type": "internal",
+      "description": "Safe code execution in sandboxed environment",
+      "allowed_languages": ["python"],
+      "timeout_seconds": 30,
+      "max_memory_mb": 256
+    },
+    "json-parser": {
+      "enabled": true,
+      "type": "internal",
+      "description": "JSON and YAML parsing and manipulation tools",
+      "validate": true,
+      "pretty_print": true
+    },
+    "http-client": {
+      "enabled": true,
+      "type": "internal",
+      "description": "HTTP client for API requests",
+      "timeout_seconds": 30,
+      "max_retries": 3,
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE"]
+    }
+  },
+  "global_settings": {
+    "log_level": "INFO",
+    "error_handling": "graceful",
+    "max_concurrent_operations": 5,
+    "operation_timeout_seconds": 300
+  }
+}
